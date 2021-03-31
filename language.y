@@ -6,18 +6,18 @@
 %token id string_literal integer_literal float_literal boolean_literal char_literal
 %token plus "+" minus "-" divide "/" mult "*" remainder "%"
 %token plus_eq "+=" minus_eq "-=" divide_eq "/=" mult_eq "*="
-%token bit_and "&" bit_or "|" shift_left "<<" shift_right ">>" bit_not "~" xor "^"
-%token bit_and_eq "&=" bit_or_eq "|=" shift_left_eq "<<=" shift_right_eq ">>=" xor_eq "^="
-%token and "&&" or "||" not "!" 
+%token bit_and "&" bit_or "|" shift_left "<<" shift_right ">>" bit_not "~" t_xor "^"
+%token bit_and_eq "&=" bit_or_eq "|=" shift_left_eq "<<=" shift_right_eq ">>=" t_xor_eq "^="
+%token t_and "&&" t_or "||" t_not "!" 
 %token less_than "<" greater_than ">" less_than_eq "<=" greater_than_eq ">=" equal "==" not_equal "!="
 %token assign "=" colon ":" comma "," semi ";"
 %token lparen "(" rparen ")" lbrace "{" rbrace "}" lbrack "[" rbrack "]"
 
-%token func for while else if return let const struct 
-%token i32 i64 f32 f64 string char bool
+%token func t_for t_while t_else t_if t_return let t_const t_struct
+%token i32 i64 f32 f64 t_string t_char t_bool
 
 %precedence then
-%precedence else
+%precedence t_else
 
 %left "&&" "||"
 %left "&" "|" "^"
@@ -41,7 +41,7 @@ top_lvl_item: function
 	| struct_decl
 	;
 
-struct_decl: struct id "{" struct_items "}" ;
+struct_decl: t_struct id "{" struct_items "}" ;
 struct_items: %empty 
 	| typed_id ";" struct_items
 	;
@@ -63,9 +63,9 @@ parameters: typed_id
 typed_id: id ":" type ;
 
 
-type: bool
-	| char 
-	| string 
+type: t_bool
+	| t_char 
+	| t_string 
 	| id 
 	| i32 
 	| i64 
@@ -89,19 +89,19 @@ stmt_list: %empty
 	| stmt";" stmt_list
 	;
 
-return_stmt: return 
-	| return expr
+return_stmt: t_return 
+	| t_return expr
 	;
 
-if_stmt: if "(" expr ")" stmt else_block ;
+if_stmt: t_if "(" expr ")" stmt else_block ;
 
 else_block: %empty %prec then
-	| else stmt
+	| t_else stmt
 	;
 
-while_stmt: while "(" expr ")" stmt ;
+while_stmt: t_while "(" expr ")" stmt ;
 
-for_stmt: for "(" assign_or_decl_stmt ";" expr ";" assignment ")" stmt ;
+for_stmt: t_for "(" assign_or_decl_stmt ";" expr ";" assignment ")" stmt ;
 
 assign_or_decl_stmt: decl_stmt 
 	| assignment
@@ -111,7 +111,7 @@ decl_stmt: let id opt_typed "=" expr
 	| const_decl
 	;
 
-const_decl: const id opt_typed "=" expr ;
+const_decl: t_const id opt_typed "=" expr ;
 
 opt_typed: %empty 
 	| ":"type
@@ -152,7 +152,7 @@ expr: primitive
 	| "!" expr
 	| "-" expr	%prec negate
 	| "~" expr
-	| if "(" expr ")" expr else expr
+	| t_if "(" expr ")" expr t_else expr
 	;
 
 primitive: literal 
