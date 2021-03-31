@@ -1,7 +1,12 @@
 
 %{
-
+    #include <string>
 %}
+
+%union{
+    int token;
+    std::string * string;
+}
 
 %token id string_literal integer_literal float_literal boolean_literal char_literal
 %token plus "+" minus "-" divide "/" mult "*" remainder "%"
