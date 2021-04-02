@@ -14,6 +14,8 @@ auto token(T t){
 
 %}
 
+%option header="tokens.hpp"
+
 %%
 
     /* ignore whitespace */
