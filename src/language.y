@@ -17,7 +17,7 @@
 
 %token id string_literal integer_literal float_literal boolean_literal char_literal
 %token plus "+" minus "-" divide "/" mult "*" remainder "%"
-%token plus_eq "+=" minus_eq "-=" divide_eq "/=" mult_eq "*="
+%token plus_eq "+=" minus_eq "-=" divide_eq "/=" mult_eq "*=" remainder_eq "%="
 %token bit_and "&" bit_or "|" shift_left "<<" shift_right ">>" bit_not "~" t_xor "^"
 %token bit_and_eq "&=" bit_or_eq "|=" shift_left_eq "<<=" shift_right_eq ">>=" t_xor_eq "^="
 %token t_and "&&" t_or "||" t_not "!" 
