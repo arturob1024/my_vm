@@ -15,7 +15,7 @@
 %token bit_and_eq "&=" bit_or_eq "|=" shift_left_eq "<<=" shift_right_eq ">>=" t_xor_eq "^="
 %token t_and "&&" t_or "||" t_not "!" 
 %token less_than "<" greater_than ">" less_than_eq "<=" greater_than_eq ">=" equal "==" not_equal "!="
-%token assign "=" colon ":" comma "," semi ";"
+%token assign "=" colon ":" comma "," semi ";" dot "."
 %token lparen "(" rparen ")" lbrace "{" rbrace "}" lbrack "[" rbrack "]"
 
 %token func t_for t_while t_else t_if t_return let t_const t_struct
