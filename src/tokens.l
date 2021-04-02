@@ -1,6 +1,8 @@
 %{
 
-void save_token(){
+#include <string>
+
+static void save_token(){
     yylval.string = new std::string{yytext, static_cast<size_t>(yyleng)};
 }
 
