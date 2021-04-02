@@ -19,7 +19,7 @@
 %token lparen "(" rparen ")" lbrace "{" rbrace "}" lbrack "[" rbrack "]"
 
 %token func t_for t_while t_else t_if t_return let t_const t_struct
-%token i32 i64 f32 f64 t_string t_char t_bool
+%token prim_type
 
 %precedence then
 %precedence t_else
@@ -68,14 +68,8 @@ parameters: typed_id
 typed_id: id ":" type ;
 
 
-type: t_bool
-	| t_char 
-	| t_string 
+type: prim_type
 	| id 
-	| i32 
-	| i64 
-	| f32 
-	| f64
 	;
 
 stmt: function_call 
