@@ -1,8 +1,13 @@
 
 %{
     #include <string>
+    #include <iostream>
 
     extern int yylex();
+
+    static void yyerror(const char * msg){
+        std::cerr << "Error: " << msg << std::endl;
+    }
 %}
 
 %union{
