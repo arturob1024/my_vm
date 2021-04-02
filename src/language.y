@@ -1,6 +1,8 @@
 
 %{
     #include <string>
+
+    extern int yylex();
 %}
 
 %union{
