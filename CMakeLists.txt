@@ -49,6 +49,12 @@ set(sources
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     )
 
+# Formatting C++ sources
+add_custom_target(format
+    COMMAND ${CMAKE_SOURCE_DIR}/format.sh
+    USES_TERMINAL
+    )
+
 add_executable(arturo_c
     ${sources}
     ${bison_output}
