@@ -14,13 +14,13 @@ auto token(T t){
 
 %%
 
-/* ignore whitespace */
+    /* ignore whitespace */
 [ \t\n]+    {}
 
-/* ignore comments */
+    /* ignore comments */
 \/\/[^\r\n]*    {}
 
- /* Math symbols */
+    /* Math symbols */
 "+"     return token(plus);
 "-"     return token(minus);
 "*"     return token(mult);
@@ -33,7 +33,7 @@ auto token(T t){
 "/="     return token(divide_eq);
 "%="     return token(remainder_eq);
 
-/* Bitwise symbols */
+    /* Bitwise symbols */
 "&"     return token(bit_and);
 "^"     return token(t_xor);
 "|"     return token(bit_or);
@@ -47,7 +47,7 @@ auto token(T t){
 "<<="     return token(shift_left_eq);
 ">>="     return token(shift_right_eq);
 
-/* Comparisons and booleans */
+    /* Comparisons and booleans */
 "&&"|"and"     return token(t_and);
 "||"|"or"     return token(t_or);
 "!"|"not"     return token(t_not);
@@ -59,7 +59,7 @@ auto token(T t){
 "=="     return token(equal);
 "!="     return token(not_equal);
 
-/* Paired symbols */
+    /* Paired symbols */
 "("     return token(lparen);
 ")"     return token(rparen);
 "{"     return token(lbrace);
@@ -67,14 +67,14 @@ auto token(T t){
 "["     return token(lbrack);
 "]"     return token(rbrack);
 
-/* Misc symbols */
+    /* Misc symbols */
 ":"     return token(colon);
 ";"     return token(semi);
 ","     return token(comma);
 "."     return token(dot);
 "="     return token(assign);
 
-/* Words */
+    /* Words */
 "func"     return token(func);
 "for"     return token(t_for);
 "while"     return token(t_while);
@@ -92,17 +92,11 @@ auto token(T t){
 "string"    { save_token(); return prim_type; }
 "bool"      { save_token(); return prim_type; }
 
-/* Literals */
+    /* Literals */
 
 "true"|"false"  { save_token(); return boolean_literal; }
 
 "0"|([1-9][0-9_]*)|(0x[0-9a-fA-F_]+) { save_token(); return integer_literal; }
-
-// .5 vs 0.5    : resolve for the latter
-// 00001.0      : resolve against
-// 1.           : resolve against
-// 1.1234000    : resolve neutral
-// 0.0000000    : resolve in favor
 
 (0|[1-9][0-9]*)\.[0-9]+     { save_token(); return float_literal; }
 
@@ -110,10 +104,10 @@ auto token(T t){
 
 '(.|\\.)'                   { save_token(); return char_literal; }
 
-/* Identifier */
+    /* Identifier */
 [a-zA-Z_][a-zA-Z0-9_]*      { save_token(); return id; }
 
-/* TODO: Error case.
-    Currently, flex will print any unmatched character to stdout as its default rule.
-    This is not what we want. However, no good implementation came to mind.
-*/
+    /* TODO: Error case.
+        Currently, flex will print any unmatched character to stdout as its default rule.
+        This is not what we want. However, no good implementation came to mind.
+    */
