@@ -2,6 +2,9 @@
 
 #include <string>
 
+/* Include parser after to get `std::string` */
+#include "parser.h"
+
 static void save_token(){
     yylval.string = new std::string{yytext, static_cast<size_t>(yyleng)};
 }
@@ -12,8 +15,12 @@ auto token(T t){
     return t;
 }
 
+extern "C" int yywrap(); /* Forward declaration. TODO: Put this in a header. */
+extern "C" int yywrap(){ return 1; /* To prevent reading a second file*/ }
+
 %}
 
+%option nounput
 %option header="tokens.hpp"
 
 %%
