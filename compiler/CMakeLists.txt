@@ -1,5 +1,4 @@
 
-
 # We require both flex and bison
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
@@ -51,10 +50,4 @@ add_executable(arturo_c
     )
 
 # Header files will be in either the build dir or in the /src
-# TODO: Add a common header for things both the compiler and VM need
 target_include_directories(arturo_c PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-# TODO: Go to C++20
-set_property(TARGET arturo_c PROPERTY CXX_STANDARD 17)
-
-target_compile_options(arturo_c PRIVATE -Wall -Wextra -Werror -Wconversion -Wmissing-declarations)
