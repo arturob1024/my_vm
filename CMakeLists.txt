@@ -24,3 +24,4 @@ add_compile_options(
 
 # Include the subparts of the project
 add_subdirectory(compiler)
+add_subdirectory(vm)
