@@ -62,22 +62,23 @@ struct_items: %empty
     | typed_id ";" struct_items
     ;
 
-function: func id param_list opt_typed function_body;
+function: func id param_list opt_typed function_body
+        ;
 
 function_body: "=" expr
     | stmt
     ;
 
 param_list: "(" ")"
-    | "("parameters")"
+    | "(" parameters ")"
     ;
 
 parameters: typed_id
     | parameters "," typed_id
     ;
 
-typed_id: id ":" type ;
-
+typed_id: id ":" type
+        ;
 
 type: prim_type
     | id
@@ -90,13 +91,12 @@ stmt: function_call
     | while_stmt
     | for_stmt
     | return_stmt
-    | decl_stmt
     ;
 
 block_stmt: "{" stmt_list "}" ;
 
 stmt_list: %empty
-    | stmt";" stmt_list
+    | stmt ";" stmt_list
     ;
 
 return_stmt: t_return
@@ -109,9 +109,11 @@ else_block: %empty %prec then
     | t_else stmt
     ;
 
-while_stmt: t_while "(" expr ")" stmt ;
+while_stmt: t_while "(" expr ")" stmt
+          ;
 
-for_stmt: t_for "(" assign_or_decl_stmt ";" expr ";" assignment ")" stmt ;
+for_stmt: t_for "(" assign_or_decl_stmt ";" expr ";" assignment ")" stmt
+        ;
 
 assign_or_decl_stmt: decl_stmt
     | assignment
@@ -121,19 +123,22 @@ decl_stmt: let id opt_typed "=" expr
     | const_decl
     ;
 
-const_decl: t_const id opt_typed "=" expr ;
+const_decl: t_const id opt_typed "=" expr
+          ;
 
 opt_typed: %empty
-    | ":"type
+    | ":" type
     ;
 
-assignment: lvalue assign_op expr ;
+assignment: lvalue assign_op expr
+          ;
 
 lvalue: id
     | lvalue "." id
     ;
 
-function_call: id "(" args ")" ;
+function_call: id "(" args ")"
+             ;
 
 args: %empty
     | expr
@@ -166,13 +171,14 @@ expr: primitive
     ;
 
 primitive: literal
-    | "(" expr ")"
+    | "(" expr ")" { $$ = $2; }
     | function_call
     | struct_creation
     | lvalue
     ;
 
-struct_creation: id "{" field_assignments "}" ;
+struct_creation: id "{" field_assignments "}"
+               ;
 
 field_assignments: %empty
     | id "=" expr
