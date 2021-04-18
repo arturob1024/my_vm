@@ -1,9 +1,6 @@
 
 %{
-    #include <string>
-    #include <iostream>
-
-    extern int yylex();
+    #include "flex_bison.h"
 
     static void yyerror(const char * msg){
         std::cerr << "Error: " << msg << std::endl;
@@ -13,6 +10,13 @@
 %union{
     int token;
     std::string * string;
+
+/* General pointer types */
+    expression * expr;
+    statement * stmt;
+    top_level * top_lvl;
+
+
 }
 
 %token id string_literal integer_literal float_literal boolean_literal char_literal
