@@ -16,21 +16,38 @@
     statement * stmt;
     top_level * top_lvl;
 
+/* Special types */
+    function_call * func_call;
 
+/* Sequence types */
+    std::vector<statement*>* statements;
 }
 
-%token id string_literal integer_literal float_literal boolean_literal char_literal
-%token plus "+" minus "-" divide "/" mult "*" remainder "%"
-%token plus_eq "+=" minus_eq "-=" divide_eq "/=" mult_eq "*=" remainder_eq "%="
-%token bit_and "&" bit_or "|" shift_left "<<" shift_right ">>" bit_not "~" t_xor "^"
-%token bit_and_eq "&=" bit_or_eq "|=" shift_left_eq "<<=" shift_right_eq ">>=" t_xor_eq "^="
-%token t_and "&&" t_or "||" t_not "!"
-%token less_than "<" greater_than ">" less_than_eq "<=" greater_than_eq ">=" equal "==" not_equal "!="
-%token assign "=" colon ":" comma "," semi ";" dot "."
-%token lparen "(" rparen ")" lbrace "{" rbrace "}" lbrack "[" rbrack "]"
+/*
+Note that the sequence types will be moved from and as such should be deleted.
+This is to simplify memory management in the rest of the program.
 
-%token func t_for t_while t_else t_if t_return let t_const t_struct
-%token prim_type
+The same is not the case for other types, as those become owned by their destinations.
+*/
+
+%token <string> id string_literal integer_literal float_literal boolean_literal char_literal
+%token <token> plus "+" minus "-" divide "/" mult "*" remainder "%"
+%token <token> plus_eq "+=" minus_eq "-=" divide_eq "/=" mult_eq "*=" remainder_eq "%="
+%token <token> bit_and "&" bit_or "|" shift_left "<<" shift_right ">>" bit_not "~" t_xor "^"
+%token <token> bit_and_eq "&=" bit_or_eq "|=" shift_left_eq "<<=" shift_right_eq ">>=" t_xor_eq "^="
+%token <token> t_and "&&" t_or "||" t_not "!"
+%token <token> less_than "<" greater_than ">" less_than_eq "<=" greater_than_eq ">=" equal "==" not_equal "!="
+%token <token> assign "=" colon ":" comma "," semi ";" dot "."
+%token <token> lparen "(" rparen ")" lbrace "{" rbrace "}" lbrack "[" rbrack "]"
+
+%token <token> func t_for t_while t_else t_if t_return let t_const t_struct
+%token <string> prim_type
+
+/* tell bison the types of the nonterminals and terminals */
+%nterm <expr> expr primitive if_expr
+%nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
+%nterm <func_call> function_call
+%nterm <statements> stmt_list
 
 %precedence then
 %precedence t_else
@@ -48,6 +65,8 @@
 
 %%
 
+/* {$$ = $1;} is the implied action. */
+
 program: top_lvl_item
     | program top_lvl_item
     ;
@@ -57,9 +76,11 @@ top_lvl_item: function
     | struct_decl
     ;
 
-struct_decl: t_struct id "{" struct_items "}" ;
+struct_decl: t_struct id lbrace struct_items rbrace
+           ;
+
 struct_items: %empty
-    | typed_id ";" struct_items
+    | typed_id semi struct_items
     ;
 
 function: func id param_list opt_typed function_body
@@ -84,7 +105,7 @@ type: prim_type
     | id
     ;
 
-stmt: function_call
+stmt: function_call { $$ = dynamic_cast<statement*>($1); }
     | assignment
     | block_stmt
     | if_stmt
@@ -93,26 +114,28 @@ stmt: function_call
     | return_stmt
     ;
 
-block_stmt: "{" stmt_list "}" ;
+block_stmt: lbrace stmt_list rbrace { $$ = new block_stmt{std::move(*$2)}; delete $2; }
+          ;
 
-stmt_list: %empty
-    | stmt ";" stmt_list
+stmt_list: %empty { $$ = new std::vector<statement*>{}; }
+    | stmt semi stmt_list { $$ = $3; $$->emplace_back($1); }
     ;
 
-return_stmt: t_return
-    | t_return expr
+return_stmt: t_return { $$ = new return_stmt; }
+    | t_return expr { $$ = new return_stmt{$2}; }
     ;
 
-if_stmt: t_if "(" expr ")" stmt else_block ;
+if_stmt: t_if "(" expr ")" stmt else_block { $$ = new if_stmt{$3, $5, $6}; }
+       ;
 
-else_block: %empty %prec then
-    | t_else stmt
+else_block: %empty %prec then { $$ = nullptr; }
+    | t_else stmt { $$ = $2; }
     ;
 
 while_stmt: t_while "(" expr ")" stmt
           ;
 
-for_stmt: t_for "(" assign_or_decl_stmt ";" expr ";" assignment ")" stmt
+for_stmt: t_for "(" assign_or_decl_stmt semi expr semi assignment ")" stmt
         ;
 
 assign_or_decl_stmt: decl_stmt
@@ -177,7 +200,7 @@ primitive: literal
     | lvalue
     ;
 
-struct_creation: id "{" field_assignments "}"
+struct_creation: id lbrace field_assignments rbrace
                ;
 
 field_assignments: %empty

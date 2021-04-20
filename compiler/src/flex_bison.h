@@ -3,8 +3,11 @@
 
 #include "ast/nodes.h"
 
+using namespace ast;
+
 #include <iostream>
 #include <string>
+#include <vector>
 
 int yylex();
 extern "C" int yywrap();

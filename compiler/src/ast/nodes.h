@@ -1,7 +1,10 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <vector>
+
 namespace ast {
+
 enum class node_type {};
 
 class node {};
@@ -26,12 +29,23 @@ class unary_expr final : public expression {};
 
 // statements
 class assignment final : public statement {};
-class block_stmt final : public statement {};
+class block_stmt final : public statement {
+  public:
+    block_stmt() = default;
+    explicit block_stmt(std::vector<statement *> &&) {}
+};
 class for_stmt final : public statement {};
 class function_call final : public statement, public expression {};
-class if_stmt final : public statement {};
+class if_stmt final : public statement {
+  public:
+    if_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * then_block,
+            [[maybe_unused]] statement * else_block) {}
+};
 class let_stmt final : public statement {};
-class return_stmt final : public statement {};
+class return_stmt final : public statement {
+  public:
+    explicit return_stmt([[maybe_unused]] expression * expr = nullptr) {}
+};
 class while_stmt final : public statement {};
 
 } // namespace ast
