@@ -1,6 +1,7 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <string>
 #include <vector>
 
 namespace ast {
@@ -43,7 +44,10 @@ class for_stmt final : public statement {
     for_stmt([[maybe_unused]] statement * initial, [[maybe_unused]] expression * condition,
              [[maybe_unused]] statement * increment, [[maybe_unused]] statement * body) {}
 };
-class function_call final : public statement, public expression {};
+class function_call final : public statement, public expression {
+  public:
+    function_call(std::string *, std::vector<expression *> &&) {}
+};
 class if_stmt final : public statement {
   public:
     if_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * then_block,

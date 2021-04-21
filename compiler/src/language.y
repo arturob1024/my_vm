@@ -21,6 +21,7 @@
 
 /* Sequence types */
     std::vector<statement*>* statements;
+    std::vector<expression*>* arguments;
 }
 
 /*
@@ -49,6 +50,7 @@ The same is not the case for other types, as those become owned by their destina
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment
 %nterm <func_call> function_call
 %nterm <statements> stmt_list
+%nterm <arguments> args
 
 %precedence then
 %precedence t_else
@@ -119,7 +121,7 @@ block_stmt: lbrace stmt_list rbrace { $$ = new block_stmt{std::move(*$2)}; delet
           ;
 
 stmt_list: %empty { $$ = new std::vector<statement*>{}; }
-    | stmt semi stmt_list { $$ = $3; $$->emplace_back($1); }
+    | stmt semi stmt_list { $$ = $3; $$->push_back($1); }
     ;
 
 return_stmt: t_return { $$ = new return_stmt; }
@@ -162,12 +164,12 @@ lvalue: id
     | lvalue "." id
     ;
 
-function_call: id "(" args ")"
+function_call: id "(" args ")" { $$ = new function_call{$1, std::move(*$3)}; delete $3; }
              ;
 
-args: %empty
-    | expr
-    | expr "," args
+args: %empty        { $$ = new std::vector<expression*>{}; }
+    | expr          { $$ = new std::vector{$1}; }
+    | expr "," args { $$ = $3; $$->push_back($1); }
     ;
 
 expr: primitive
@@ -197,7 +199,7 @@ expr: primitive
 
 primitive: literal
     | "(" expr ")" { $$ = $2; }
-    | function_call
+    | function_call { $$ = dynamic_cast<expression*>($1); }
     | struct_creation
     | lvalue
     ;
