@@ -46,6 +46,7 @@ The same is not the case for other types, as those become owned by their destina
 /* tell bison the types of the nonterminals and terminals */
 %nterm <expr> expr primitive if_expr
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
+%nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment
 %nterm <func_call> function_call
 %nterm <statements> stmt_list
 
@@ -132,10 +133,11 @@ else_block: %empty %prec then { $$ = nullptr; }
     | t_else stmt { $$ = $2; }
     ;
 
-while_stmt: t_while "(" expr ")" stmt
+while_stmt: t_while "(" expr ")" stmt { $$ = new while_stmt{$3, $5}; }
           ;
 
 for_stmt: t_for "(" assign_or_decl_stmt semi expr semi assignment ")" stmt
+        { $$ = new for_stmt{$3, $5, $7, $9}; }
         ;
 
 assign_or_decl_stmt: decl_stmt

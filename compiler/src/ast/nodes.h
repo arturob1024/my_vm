@@ -34,7 +34,11 @@ class block_stmt final : public statement {
     block_stmt() = default;
     explicit block_stmt(std::vector<statement *> &&) {}
 };
-class for_stmt final : public statement {};
+class for_stmt final : public statement {
+  public:
+    for_stmt([[maybe_unused]] statement * initial, [[maybe_unused]] expression * condition,
+             [[maybe_unused]] statement * increment, [[maybe_unused]] statement * body) {}
+};
 class function_call final : public statement, public expression {};
 class if_stmt final : public statement {
   public:
@@ -46,7 +50,10 @@ class return_stmt final : public statement {
   public:
     explicit return_stmt([[maybe_unused]] expression * expr = nullptr) {}
 };
-class while_stmt final : public statement {};
+class while_stmt final : public statement {
+  public:
+    while_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * body) {}
+};
 
 } // namespace ast
 
