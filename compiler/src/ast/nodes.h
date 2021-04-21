@@ -21,7 +21,11 @@ class struct_decl final : public top_level {};
 
 // expressions
 class binary_expr final : public expression {};
-class if_expr final : public expression {};
+class if_expr final : public expression {
+  public:
+    if_expr([[maybe_unused]] expression * cond, [[maybe_unused]] expression * true_case,
+            [[maybe_unused]] expression * false_case) {}
+};
 class literal final : public expression {};
 class lvalue final : public expression {};
 class struct_init final : public expression {};

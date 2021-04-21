@@ -44,7 +44,7 @@ The same is not the case for other types, as those become owned by their destina
 %token <string> prim_type
 
 /* tell bison the types of the nonterminals and terminals */
-%nterm <expr> expr primitive if_expr
+%nterm <expr> expr primitive
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment
 %nterm <func_call> function_call
@@ -192,7 +192,7 @@ expr: primitive
     | "!" expr
     | "-" expr    %prec negate
     | "~" expr
-    | t_if "(" expr ")" expr t_else expr
+    | t_if "(" expr ")" expr t_else expr { $$ = new if_expr{$3, $5, $7}; }
     ;
 
 primitive: literal
