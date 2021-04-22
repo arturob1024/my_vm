@@ -9,6 +9,7 @@
 
 %union{
     int token;
+    assignment::operation assign_op;
     std::string * string;
 
 /* General pointer types */
@@ -19,6 +20,7 @@
 /* Special types */
     function_call * func_call;
     const_decl * const_declaration;
+    lvalue * lval;
 
 /* Sequence types */
     std::vector<statement*>* statements;
@@ -51,12 +53,14 @@ The same is not the case for other types, as those become owned by their destina
 %token <string> prim_type
 
 /* tell bison the types of the nonterminals and terminals */
+%nterm <assign_op> assign_op
 %nterm <string> opt_typed type
 %nterm <expr> expr primitive
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt
 %nterm <func_call> function_call
 %nterm <const_declaration> const_decl
+%nterm <lval> lvalue
 %nterm <statements> stmt_list
 %nterm <arguments> args
 
@@ -165,7 +169,7 @@ opt_typed: %empty { $$ = nullptr; }
     | ":" type { $$ = $2; }
     ;
 
-assignment: lvalue assign_op expr
+assignment: lvalue assign_op expr { $$ = new assignment{$1, $2, $3}; }
           ;
 
 lvalue: id
@@ -220,17 +224,17 @@ field_assignments: %empty
     | id "=" expr "," field_assignments
     ;
 
-assign_op: "="
-    | "+="
-    | "-="
-    | "/="
-    | "%="
-    | "<<="
-    | ">>="
-    | "&="
-    | "|="
-    | "^="
-    | "*="
+assign_op: "=" { $$ = assignment::operation::assign; }
+    | "+="     { $$ = assignment::operation::add; }
+    | "-="     { $$ = assignment::operation::sub; }
+    | "/="     { $$ = assignment::operation::div; }
+    | "%="     { $$ = assignment::operation::remainder; }
+    | "<<="    { $$ = assignment::operation::bit_left; }
+    | ">>="    { $$ = assignment::operation::bit_right; }
+    | "&="     { $$ = assignment::operation::bit_and; }
+    | "|="     { $$ = assignment::operation::bit_or; }
+    | "^="     { $$ = assignment::operation::bit_xor; }
+    | "*="     { $$ = assignment::operation::mul; }
     ;
 
 literal: string_literal

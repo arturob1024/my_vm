@@ -36,7 +36,23 @@ class struct_init final : public expression {};
 class unary_expr final : public expression {};
 
 // statements
-class assignment final : public statement {};
+class assignment final : public statement {
+  public:
+    enum class operation {
+        assign,
+        add,
+        sub,
+        mul,
+        div,
+        remainder,
+        bit_and,
+        bit_or,
+        bit_left,
+        bit_right,
+        bit_xor,
+    };
+    assignment(lvalue *, operation, expression *) {}
+};
 class block_stmt final : public statement {
   public:
     block_stmt() = default;
