@@ -16,7 +16,10 @@ class statement : public virtual node {};
 class expression : public virtual node {};
 
 // declarations
-class const_decl final : public top_level, public statement {};
+class const_decl final : public top_level, public statement {
+  public:
+    const_decl(std::string *, std::string *, expression *) {}
+};
 class function_decl final : public top_level {};
 class struct_decl final : public top_level {};
 
@@ -53,7 +56,10 @@ class if_stmt final : public statement {
     if_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * then_block,
             [[maybe_unused]] statement * else_block) {}
 };
-class let_stmt final : public statement {};
+class let_stmt final : public statement {
+  public:
+    let_stmt(std::string *, std::string *, expression *) {}
+};
 class return_stmt final : public statement {
   public:
     explicit return_stmt([[maybe_unused]] expression * expr = nullptr) {}

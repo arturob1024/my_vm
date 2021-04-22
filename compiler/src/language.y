@@ -18,11 +18,17 @@
 
 /* Special types */
     function_call * func_call;
+    const_decl * const_declaration;
 
 /* Sequence types */
     std::vector<statement*>* statements;
     std::vector<expression*>* arguments;
 }
+
+/*
+A special type is one that could be either one or another general type,
+and so has to be declared separately and then casted when appropriate.
+*/
 
 /*
 Note that the sequence types will be moved from and as such should be deleted.
@@ -45,10 +51,12 @@ The same is not the case for other types, as those become owned by their destina
 %token <string> prim_type
 
 /* tell bison the types of the nonterminals and terminals */
+%nterm <string> opt_typed type
 %nterm <expr> expr primitive
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
-%nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment
+%nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt
 %nterm <func_call> function_call
+%nterm <const_declaration> const_decl
 %nterm <statements> stmt_list
 %nterm <arguments> args
 
@@ -146,15 +154,15 @@ assign_or_decl_stmt: decl_stmt
     | assignment
     ;
 
-decl_stmt: let id opt_typed "=" expr
-    | const_decl
+decl_stmt: let id opt_typed "=" expr { $$ = new let_stmt{$2, $3, $5}; }
+    | const_decl { $$ = dynamic_cast<statement*>($1); }
     ;
 
-const_decl: t_const id opt_typed "=" expr
+const_decl: t_const id opt_typed "=" expr { $$ = new const_decl{$2, $3, $5}; }
           ;
 
-opt_typed: %empty
-    | ":" type
+opt_typed: %empty { $$ = nullptr; }
+    | ":" type { $$ = $2; }
     ;
 
 assignment: lvalue assign_op expr
