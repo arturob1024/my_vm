@@ -26,7 +26,8 @@
 /* Sequence types */
     std::vector<statement*>* statements;
     std::vector<expression*>* arguments;
-    std::vector<typed_id*>* typed_ids;
+    std::vector<typed_id>* typed_ids;
+    std::vector<field_assignment>* field_assignments;
 }
 
 /*
@@ -39,6 +40,8 @@ Note that the sequence types will be moved from and as such should be deleted.
 This is to simplify memory management in the rest of the program.
 
 The same is not the case for other types, as those become owned by their destinations.
+
+A sequence of pointers allows polymorphism, otherwise there is none.
 */
 
 %token <string> id string_literal integer_literal float_literal boolean_literal char_literal
@@ -57,7 +60,7 @@ The same is not the case for other types, as those become owned by their destina
 /* tell bison the types of the nonterminals and terminals */
 %nterm <assign_op> assign_op
 %nterm <string> opt_typed type
-%nterm <expr> expr primitive
+%nterm <expr> expr primitive struct_creation
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt
 %nterm <func_call> function_call
@@ -67,6 +70,7 @@ The same is not the case for other types, as those become owned by their destina
 %nterm <statements> stmt_list
 %nterm <arguments> args
 %nterm <typed_ids> param_list parameters struct_items
+%nterm <field_assignments> field_assignments
 
 %precedence then
 %precedence t_else
@@ -84,7 +88,7 @@ The same is not the case for other types, as those become owned by their destina
 
 %%
 
-/* {$$ = $1;} is the implied action. */
+/* { $$ = $1; } is the implied action. */
 
 program: top_lvl_item
     | program top_lvl_item
@@ -98,8 +102,8 @@ top_lvl_item: function
 struct_decl: t_struct id lbrace struct_items rbrace
            ;
 
-struct_items: %empty { $$ = new std::vector<typed_id*>;}
-    | typed_id semi struct_items { $$ = $3; $$->push_back($1); }
+struct_items: %empty             { $$ = new std::vector<typed_id>; }
+    | typed_id semi struct_items { $$ = $3; $$->push_back(std::move(*$1)); delete $1; }
     ;
 
 function: func id param_list opt_typed function_body
@@ -109,12 +113,12 @@ function_body: "=" expr
     | stmt
     ;
 
-param_list: "(" ")" { $$ = new std::vector<typed_id*>;}
+param_list: "(" ")"      { $$ = new std::vector<typed_id>; }
     | "(" parameters ")" { $$ = $2; }
     ;
 
-parameters: typed_id { $$ = new std::vector{$1};}
-    | parameters "," typed_id { $$ = $1; $$->push_back($3); }
+parameters: typed_id { $$ = new std::vector<typed_id>; $$->push_back(std::move(*$1)); delete $1; }
+    | parameters "," typed_id { $$ = $1; $$->push_back(std::move(*$3)); delete $3; }
     ;
 
 typed_id: id ":" type { $$ = new typed_id{$1, $3}; }
@@ -214,18 +218,18 @@ expr: primitive
     ;
 
 primitive: literal
-    | "(" expr ")" { $$ = $2; }
-    | function_call { $$ = dynamic_cast<expression*>($1); }
+    | "(" expr ")"      { $$ = $2; }
+    | function_call     { $$ = dynamic_cast<expression*>($1); }
     | struct_creation
-    | lvalue
+    | lvalue            { $$ = dynamic_cast<expression*>($1); }
     ;
 
-struct_creation: id lbrace field_assignments rbrace
+struct_creation: id lbrace field_assignments rbrace { $$ = new struct_init{$1, std::move(*$3)}; delete $3; }
                ;
 
-field_assignments: %empty
-    | id "=" expr
-    | id "=" expr "," field_assignments
+field_assignments: %empty               { $$ = new std::vector<field_assignment>; }
+    | id "=" expr                       { $$ = new std::vector<field_assignment>; $$->emplace_back($1, $3); }
+    | id "=" expr "," field_assignments { $$ = $5; $$->emplace_back($1, $3); }
     ;
 
 assign_op: "=" { $$ = assignment::operation::assign; }

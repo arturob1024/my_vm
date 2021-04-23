@@ -15,11 +15,35 @@ class top_level : public virtual node {};
 class statement : public virtual node {};
 class expression : public virtual node {};
 
-// Typed Id
-// TODO: Should this be a node?
+// The following two types are helper types.
+// They have the following properites:
+// - No polymorphism
+// - No implicit copying
+// - Read-only APIs
 class typed_id final {
   public:
     typed_id(std::string *, std::string *) {}
+
+    typed_id(const typed_id &) = delete;
+    typed_id & operator=(const typed_id &) = delete;
+
+    typed_id(typed_id &&) noexcept = default;
+    typed_id & operator=(typed_id &&) noexcept = default;
+
+    ~typed_id() noexcept = default;
+};
+
+class field_assignment final {
+  public:
+    field_assignment(std::string *, expression *) {}
+
+    field_assignment(const field_assignment &) = delete;
+    field_assignment & operator=(const field_assignment &) = delete;
+
+    field_assignment(field_assignment &&) noexcept = default;
+    field_assignment & operator=(field_assignment &&) noexcept = default;
+
+    ~field_assignment() noexcept = default;
 };
 
 // declarations
@@ -39,7 +63,10 @@ class if_expr final : public expression {
 };
 class literal final : public expression {};
 class lvalue final : public expression {};
-class struct_init final : public expression {};
+class struct_init final : public expression {
+  public:
+    struct_init(std::string *, std::vector<field_assignment> &&) {}
+};
 class unary_expr final : public expression {};
 
 // statements
