@@ -60,7 +60,7 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 /* tell bison the types of the nonterminals and terminals */
 %nterm <assign_op> assign_op
 %nterm <string> opt_typed type
-%nterm <expr> expr primitive struct_creation
+%nterm <expr> expr primitive struct_creation literal
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt
 %nterm <func_call> function_call
@@ -245,9 +245,9 @@ assign_op: "=" { $$ = assignment::operation::assign; }
     | "*="     { $$ = assignment::operation::mul; }
     ;
 
-literal: string_literal
-    | integer_literal
-    | float_literal
-    | boolean_literal
-    | char_literal
+literal: string_literal { $$ = new literal{$1, literal::type::string}; }
+    | integer_literal   { $$ = new literal{$1, literal::type::integer}; }
+    | float_literal     { $$ = new literal{$1, literal::type::floating}; }
+    | boolean_literal   { $$ = new literal{$1, literal::type::boolean}; }
+    | char_literal      { $$ = new literal{$1, literal::type::character}; }
     ;

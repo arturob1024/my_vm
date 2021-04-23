@@ -61,7 +61,11 @@ class if_expr final : public expression {
     if_expr([[maybe_unused]] expression * cond, [[maybe_unused]] expression * true_case,
             [[maybe_unused]] expression * false_case) {}
 };
-class literal final : public expression {};
+class literal final : public expression {
+  public:
+    enum class type { string, integer, floating, character, boolean };
+    literal(std::string *, type) {}
+};
 class lvalue final : public expression {};
 class struct_init final : public expression {
   public:
