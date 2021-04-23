@@ -15,6 +15,13 @@ class top_level : public virtual node {};
 class statement : public virtual node {};
 class expression : public virtual node {};
 
+// Typed Id
+// TODO: Should this be a node?
+class typed_id final {
+  public:
+    typed_id(std::string *, std::string *) {}
+};
+
 // declarations
 class const_decl final : public top_level, public statement {
   public:

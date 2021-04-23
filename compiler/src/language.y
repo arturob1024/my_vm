@@ -21,10 +21,12 @@
     function_call * func_call;
     const_decl * const_declaration;
     lvalue * lval;
+    typed_id * id_with_type;
 
 /* Sequence types */
     std::vector<statement*>* statements;
     std::vector<expression*>* arguments;
+    std::vector<typed_id*>* typed_ids;
 }
 
 /*
@@ -61,8 +63,10 @@ The same is not the case for other types, as those become owned by their destina
 %nterm <func_call> function_call
 %nterm <const_declaration> const_decl
 %nterm <lval> lvalue
+%nterm <id_with_type> typed_id
 %nterm <statements> stmt_list
 %nterm <arguments> args
+%nterm <typed_ids> param_list parameters struct_items
 
 %precedence then
 %precedence t_else
@@ -94,8 +98,8 @@ top_lvl_item: function
 struct_decl: t_struct id lbrace struct_items rbrace
            ;
 
-struct_items: %empty
-    | typed_id semi struct_items
+struct_items: %empty { $$ = new std::vector<typed_id*>;}
+    | typed_id semi struct_items { $$ = $3; $$->push_back($1); }
     ;
 
 function: func id param_list opt_typed function_body
@@ -105,15 +109,15 @@ function_body: "=" expr
     | stmt
     ;
 
-param_list: "(" ")"
-    | "(" parameters ")"
+param_list: "(" ")" { $$ = new std::vector<typed_id*>;}
+    | "(" parameters ")" { $$ = $2; }
     ;
 
-parameters: typed_id
-    | parameters "," typed_id
+parameters: typed_id { $$ = new std::vector{$1};}
+    | parameters "," typed_id { $$ = $1; $$->push_back($3); }
     ;
 
-typed_id: id ":" type
+typed_id: id ":" type { $$ = new typed_id{$1, $3}; }
         ;
 
 type: prim_type
