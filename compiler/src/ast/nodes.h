@@ -51,7 +51,10 @@ class const_decl final : public top_level, public statement {
   public:
     const_decl(std::string *, std::string *, expression *) {}
 };
-class function_decl final : public top_level {};
+class function_decl final : public top_level {
+  public:
+    function_decl(std::string *, std::vector<typed_id> &&, std::string *, statement *) {}
+};
 class struct_decl final : public top_level {};
 
 // expressions

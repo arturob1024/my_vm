@@ -62,7 +62,8 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 %nterm <string> opt_typed type
 %nterm <expr> expr primitive struct_creation literal
 %nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
-%nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt
+%nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt function_body
+%nterm <top_lvl> function
 %nterm <func_call> function_call
 %nterm <const_declaration> const_decl
 %nterm <lval> lvalue
@@ -107,9 +108,10 @@ struct_items: %empty             { $$ = new std::vector<typed_id>; }
     ;
 
 function: func id param_list opt_typed function_body
+        { $$ = new function_decl{$2, std::move(*$3), $4, $5}; delete $3; }
         ;
 
-function_body: "=" expr
+function_body: "=" expr { $$ = new return_stmt{$2}; }
     | stmt
     ;
 
