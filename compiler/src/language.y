@@ -61,7 +61,7 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 %nterm <assign_op> assign_op
 %nterm <string> opt_typed type
 %nterm <expr> expr primitive struct_creation literal
-%nterm <stmt> stmt else_block if_stmt return_stmt block_stmt
+%nterm <stmt> oneline_stmt else_block if_stmt return_stmt block_stmt compound_stmt stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt function_body
 %nterm <top_lvl> function
 %nterm <func_call> function_call
@@ -130,20 +130,26 @@ type: prim_type
     | id
     ;
 
-stmt: function_call { $$ = dynamic_cast<statement*>($1); }
-    | assignment
-    | block_stmt
+stmt: oneline_stmt semi
+    | compound_stmt
+    ;
+
+oneline_stmt: function_call { $$ = dynamic_cast<statement*>($1); }
+    | assign_or_decl_stmt
+    | return_stmt
+    ;
+
+compound_stmt: block_stmt
     | if_stmt
     | while_stmt
     | for_stmt
-    | return_stmt
     ;
 
 block_stmt: lbrace stmt_list rbrace { $$ = new block_stmt{std::move(*$2)}; delete $2; }
           ;
 
-stmt_list: %empty { $$ = new std::vector<statement*>{}; }
-    | stmt semi stmt_list { $$ = $3; $$->push_back($1); }
+stmt_list: %empty { $$ = new std::vector<statement*>; }
+    | stmt stmt_list { $$ = $2; $$->push_back($1); }
     ;
 
 return_stmt: t_return { $$ = new return_stmt; }
