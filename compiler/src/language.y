@@ -63,7 +63,7 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 %nterm <expr> expr primitive struct_creation literal
 %nterm <stmt> oneline_stmt else_block if_stmt return_stmt block_stmt compound_stmt stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt function_body
-%nterm <top_lvl> function
+%nterm <top_lvl> function struct_decl
 %nterm <func_call> function_call
 %nterm <const_declaration> const_decl
 %nterm <lval> lvalue
@@ -100,7 +100,7 @@ top_lvl_item: function
     | struct_decl
     ;
 
-struct_decl: t_struct id lbrace struct_items rbrace
+struct_decl: t_struct id lbrace struct_items rbrace { $$ = new struct_decl{$2, std::move(*$4)}; delete $4; }
            ;
 
 struct_items: %empty             { $$ = new std::vector<typed_id>; }

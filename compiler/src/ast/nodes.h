@@ -55,7 +55,10 @@ class function_decl final : public top_level {
   public:
     function_decl(std::string *, std::vector<typed_id> &&, std::string *, statement *) {}
 };
-class struct_decl final : public top_level {};
+class struct_decl final : public top_level {
+  public:
+    struct_decl(std::string *, std::vector<typed_id> &&) {}
+};
 
 // expressions
 class binary_expr final : public expression {};
