@@ -77,7 +77,16 @@ class struct_init final : public expression {
   public:
     struct_init(std::string *, std::vector<field_assignment> &&) {}
 };
-class unary_expr final : public expression {};
+class unary_expr final : public expression {
+  public:
+    enum class operation {
+        boolean_not,
+        negation,
+        bit_not,
+    };
+
+    unary_expr(operation, expression *) {}
+};
 
 // statements
 class assignment final : public statement {

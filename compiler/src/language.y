@@ -219,9 +219,9 @@ expr: primitive
     | expr ">>" expr
     | expr "^" expr
     | expr "%" expr
-    | "!" expr
-    | "-" expr    %prec negate
-    | "~" expr
+    | "!" expr                           { $$ = new unary_expr{unary_expr::operation::boolean_not, $2}; }
+    | "-" expr    %prec negate           { $$ = new unary_expr{unary_expr::operation::negation, $2}; }
+    | "~" expr                           { $$ = new unary_expr{unary_expr::operation::bit_not, $2}; }
     | t_if "(" expr ")" expr t_else expr { $$ = new if_expr{$3, $5, $7}; }
     ;
 
