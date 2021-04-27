@@ -61,7 +61,30 @@ class struct_decl final : public top_level {
 };
 
 // expressions
-class binary_expr final : public expression {};
+class binary_expr final : public expression {
+  public:
+    enum class operation {
+        add,
+        sub,
+        mul,
+        div,
+        rem,
+        boolean_and,
+        boolean_or,
+        less_eq,
+        less,
+        greater_eq,
+        greater,
+        equal,
+        not_equal,
+        bit_and,
+        bit_or,
+        bit_xor,
+        bit_left,
+        bit_right
+    };
+    binary_expr(expression *, operation, expression *) {}
+};
 class if_expr final : public expression {
   public:
     if_expr([[maybe_unused]] expression * cond, [[maybe_unused]] expression * true_case,

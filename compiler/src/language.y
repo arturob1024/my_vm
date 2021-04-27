@@ -201,28 +201,28 @@ args: %empty        { $$ = new std::vector<expression*>{}; }
     ;
 
 expr: primitive
-    | expr "+" expr
-    | expr "-" expr
-    | expr "*" expr
-    | expr "/" expr
-    | expr "&&" expr
-    | expr "||" expr
-    | expr "<=" expr
-    | expr "<" expr
-    | expr ">=" expr
-    | expr ">" expr
-    | expr "==" expr
-    | expr "!=" expr
-    | expr "&" expr
-    | expr "|" expr
-    | expr "<<" expr
-    | expr ">>" expr
-    | expr "^" expr
-    | expr "%" expr
-    | "!" expr                           { $$ = new unary_expr{unary_expr::operation::boolean_not, $2}; }
-    | "-" expr    %prec negate           { $$ = new unary_expr{unary_expr::operation::negation, $2}; }
-    | "~" expr                           { $$ = new unary_expr{unary_expr::operation::bit_not, $2}; }
-    | t_if "(" expr ")" expr t_else expr { $$ = new if_expr{$3, $5, $7}; }
+    | expr "+" expr                         { $$ = new binary_expr{$1, binary_expr::operation::add, $3}; }
+    | expr "-" expr                         { $$ = new binary_expr{$1, binary_expr::operation::sub, $3}; }
+    | expr "*" expr                         { $$ = new binary_expr{$1, binary_expr::operation::mul, $3}; }
+    | expr "/" expr                         { $$ = new binary_expr{$1, binary_expr::operation::div, $3}; }
+    | expr "&&" expr                        { $$ = new binary_expr{$1, binary_expr::operation::boolean_and, $3}; }
+    | expr "||" expr                        { $$ = new binary_expr{$1, binary_expr::operation::boolean_or, $3}; }
+    | expr "<=" expr                        { $$ = new binary_expr{$1, binary_expr::operation::less_eq, $3}; }
+    | expr "<" expr                         { $$ = new binary_expr{$1, binary_expr::operation::less, $3}; }
+    | expr ">=" expr                        { $$ = new binary_expr{$1, binary_expr::operation::greater_eq, $3}; }
+    | expr ">" expr                         { $$ = new binary_expr{$1, binary_expr::operation::greater, $3}; }
+    | expr "==" expr                        { $$ = new binary_expr{$1, binary_expr::operation::equal, $3}; }
+    | expr "!=" expr                        { $$ = new binary_expr{$1, binary_expr::operation::not_equal, $3}; }
+    | expr "&" expr                         { $$ = new binary_expr{$1, binary_expr::operation::bit_and, $3}; }
+    | expr "|" expr                         { $$ = new binary_expr{$1, binary_expr::operation::bit_or, $3}; }
+    | expr "<<" expr                        { $$ = new binary_expr{$1, binary_expr::operation::bit_right, $3}; }
+    | expr ">>" expr                        { $$ = new binary_expr{$1, binary_expr::operation::bit_left, $3}; }
+    | expr "^" expr                         { $$ = new binary_expr{$1, binary_expr::operation::bit_xor, $3}; }
+    | expr "%" expr                         { $$ = new binary_expr{$1, binary_expr::operation::rem, $3}; }
+    | "!" expr                              { $$ = new unary_expr{unary_expr::operation::boolean_not, $2}; }
+    | "-" expr    %prec negate              { $$ = new unary_expr{unary_expr::operation::negation, $2}; }
+    | "~" expr                              { $$ = new unary_expr{unary_expr::operation::bit_not, $2}; }
+    | t_if "(" expr ")" expr t_else expr    { $$ = new if_expr{$3, $5, $7}; }
     ;
 
 primitive: literal
