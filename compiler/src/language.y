@@ -188,8 +188,8 @@ opt_typed: %empty { $$ = nullptr; }
 assignment: lvalue assign_op expr { $$ = new assignment{$1, $2, $3}; }
           ;
 
-lvalue: id
-    | lvalue "." id
+lvalue: id          { $$ = new lvalue{$1}; }
+    | lvalue "." id { $$ = new lvalue{$3, $1}; }
     ;
 
 function_call: id "(" args ")" { $$ = new function_call{$1, std::move(*$3)}; delete $3; }

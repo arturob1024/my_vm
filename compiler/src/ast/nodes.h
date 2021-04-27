@@ -95,7 +95,10 @@ class literal final : public expression {
     enum class type { string, integer, floating, character, boolean };
     literal(std::string *, type) {}
 };
-class lvalue final : public expression {};
+class lvalue final : public expression {
+  public:
+    explicit lvalue(std::string *, [[maybe_unused]] lvalue * parent = nullptr) {}
+};
 class struct_init final : public expression {
   public:
     struct_init(std::string *, std::vector<field_assignment> &&) {}
