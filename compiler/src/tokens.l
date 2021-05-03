@@ -1,8 +1,6 @@
 %{
 
-#include <string>
-
-/* Include parser after to get `std::string` */
+#include "flex_bison.h"
 #include "parser.h"
 
 static void save_token(){
@@ -15,7 +13,6 @@ auto token(T t){
     return t;
 }
 
-extern "C" int yywrap(); /* Forward declaration. TODO: Put this in a header. */
 extern "C" int yywrap(){ return 1; /* To prevent reading a second file*/ }
 
 %}

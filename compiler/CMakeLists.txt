@@ -15,7 +15,7 @@ set(bison_output ${CMAKE_BINARY_DIR}/parser.cpp)
 # Run Bison
 add_custom_command(
     OUTPUT ${bison_output} ${parser_header}
-    COMMAND ${BISON_EXECUTABLE} ${bison_input} --defines=${parser_header} -Wall --output=${bison_output}
+    COMMAND ${BISON_EXECUTABLE} ${bison_input} --defines=${parser_header} -Wall --output=${bison_output} --report=all
     COMMENT "Generating parser..."
     DEPENDS ${bison_input}
     USES_TERMINAL
