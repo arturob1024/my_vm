@@ -26,7 +26,10 @@ class node {
 // Intermediate nodes
 class top_level : public virtual node {};
 class statement : public virtual node {};
+using statement_ptr = std::unique_ptr<statement>;
+
 class expression : public virtual node {};
+using expression_ptr = std::unique_ptr<expression>;
 
 // The following two types are helper types.
 // They have the following properites:
@@ -73,7 +76,7 @@ class field_assignment final {
 
   private:
     std::string id;
-    std::unique_ptr<expression> expr;
+    expression_ptr expr;
 };
 
 // declarations
@@ -90,7 +93,7 @@ class const_decl final : public top_level, public statement {
   private:
     std::string id;
     std::optional<std::string> opt_type;
-    std::unique_ptr<expression> expr;
+    expression_ptr expr;
 };
 class function_decl final : public top_level {
   public:
@@ -108,7 +111,7 @@ class function_decl final : public top_level {
     std::string id;
     std::vector<typed_id> params;
     std::optional<std::string> opt_ret_type;
-    std::unique_ptr<statement> body;
+    statement_ptr body;
 };
 class struct_decl final : public top_level {
   public:
@@ -152,7 +155,7 @@ class binary_expr final : public expression {
         , op{op} {}
 
   private:
-    std::unique_ptr<expression> lhs, rhs;
+    expression_ptr lhs, rhs;
     operation op;
 };
 class if_expr final : public expression {
@@ -163,7 +166,7 @@ class if_expr final : public expression {
         , false_case{false_case} {}
 
   private:
-    std::unique_ptr<expression> cond, true_case, false_case;
+    expression_ptr cond, true_case, false_case;
 };
 class literal final : public expression {
   public:
@@ -214,7 +217,7 @@ class unary_expr final : public expression {
 
   private:
     operation op;
-    std::unique_ptr<expression> expr;
+    expression_ptr expr;
 };
 
 // statements
@@ -241,7 +244,7 @@ class assignment final : public statement {
   private:
     std::unique_ptr<lvalue> dest;
     operation op;
-    std::unique_ptr<expression> expr;
+    expression_ptr expr;
 };
 class block_stmt final : public statement {
   public:
@@ -251,7 +254,7 @@ class block_stmt final : public statement {
     }
 
   private:
-    std::vector<std::unique_ptr<statement>> stmts;
+    std::vector<statement_ptr> stmts;
 };
 class for_stmt final : public statement {
   public:
@@ -262,8 +265,8 @@ class for_stmt final : public statement {
         , condition{condition} {}
 
   private:
-    std::unique_ptr<statement> initial, increment, body;
-    std::unique_ptr<expression> condition;
+    statement_ptr initial, increment, body;
+    expression_ptr condition;
 };
 class function_call final : public statement, public expression {
   public:
@@ -275,7 +278,7 @@ class function_call final : public statement, public expression {
 
   private:
     std::string id;
-    std::vector<std::unique_ptr<expression>> args;
+    std::vector<expression_ptr> args;
 };
 class if_stmt final : public statement {
   public:
@@ -285,8 +288,8 @@ class if_stmt final : public statement {
         , else_block{else_block} {}
 
   private:
-    std::unique_ptr<expression> cond;
-    std::unique_ptr<statement> then_block, else_block;
+    expression_ptr cond;
+    statement_ptr then_block, else_block;
 };
 class let_stmt final : public statement {
   public:
@@ -301,7 +304,7 @@ class let_stmt final : public statement {
   private:
     std::string id;
     std::optional<std::string> opt_type;
-    std::unique_ptr<expression> expr;
+    expression_ptr expr;
 };
 class return_stmt final : public statement {
   public:
@@ -309,7 +312,7 @@ class return_stmt final : public statement {
         : expr{expr} {}
 
   private:
-    std::unique_ptr<expression> expr;
+    expression_ptr expr;
 };
 class while_stmt final : public statement {
   public:
@@ -318,8 +321,8 @@ class while_stmt final : public statement {
         , body{body} {}
 
   private:
-    std::unique_ptr<expression> cond;
-    std::unique_ptr<statement> body;
+    expression_ptr cond;
+    statement_ptr body;
 };
 
 } // namespace ast
