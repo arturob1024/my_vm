@@ -146,25 +146,59 @@ class binary_expr final : public expression {
         bit_left,
         bit_right
     };
-    binary_expr(expression *, operation, expression *) {}
+    binary_expr(expression * lhs, operation op, expression * rhs)
+        : lhs{lhs}
+        , rhs{rhs}
+        , op{op} {}
+
+  private:
+    std::unique_ptr<expression> lhs, rhs;
+    operation op;
 };
 class if_expr final : public expression {
   public:
-    if_expr([[maybe_unused]] expression * cond, [[maybe_unused]] expression * true_case,
-            [[maybe_unused]] expression * false_case) {}
+    if_expr(expression * cond, expression * true_case, expression * false_case)
+        : cond{cond}
+        , true_case{true_case}
+        , false_case{false_case} {}
+
+  private:
+    std::unique_ptr<expression> cond, true_case, false_case;
 };
 class literal final : public expression {
   public:
     enum class type { string, integer, floating, character, boolean };
-    literal(std::string *, type) {}
+    literal(std::string * value, type typ)
+        : value{std::move(*value)}
+        , typ{typ} {
+        delete value;
+    }
+
+  private:
+    std::string value;
+    type typ;
 };
 class lvalue final : public expression {
   public:
-    explicit lvalue(std::string *, [[maybe_unused]] lvalue * parent = nullptr) {}
+    explicit lvalue(std::string * id, lvalue * parent = nullptr)
+        : id{std::move(*id)}
+        , parent{parent} {
+        delete id;
+    }
+
+  private:
+    std::string id;
+    std::unique_ptr<lvalue> parent;
 };
 class struct_init final : public expression {
   public:
-    struct_init(std::string *, std::vector<field_assignment> &&) {}
+    struct_init(std::string * type, std::vector<field_assignment> && fields)
+        : type{std::move(*type)}
+        , fields{std::move(fields)} {}
+
+  private:
+    std::string type;
+    std::vector<field_assignment> fields;
 };
 class unary_expr final : public expression {
   public:
@@ -174,7 +208,13 @@ class unary_expr final : public expression {
         bit_not,
     };
 
-    unary_expr(operation, expression *) {}
+    unary_expr(operation op, expression * expr)
+        : op{op}
+        , expr{expr} {}
+
+  private:
+    operation op;
+    std::unique_ptr<expression> expr;
 };
 
 // statements
