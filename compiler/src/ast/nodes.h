@@ -233,38 +233,93 @@ class assignment final : public statement {
         bit_right,
         bit_xor,
     };
-    assignment(lvalue *, operation, expression *) {}
+    assignment(lvalue * dest, operation op, expression * expr)
+        : dest{dest}
+        , op{op}
+        , expr{expr} {}
+
+  private:
+    std::unique_ptr<lvalue> dest;
+    operation op;
+    std::unique_ptr<expression> expr;
 };
 class block_stmt final : public statement {
   public:
     block_stmt() = default;
-    explicit block_stmt(std::vector<statement *> &&) {}
+    explicit block_stmt(std::vector<statement *> && stmts) {
+        for (auto * stmt : stmts) this->stmts.emplace_back(stmt);
+    }
+
+  private:
+    std::vector<std::unique_ptr<statement>> stmts;
 };
 class for_stmt final : public statement {
   public:
-    for_stmt([[maybe_unused]] statement * initial, [[maybe_unused]] expression * condition,
-             [[maybe_unused]] statement * increment, [[maybe_unused]] statement * body) {}
+    for_stmt(statement * initial, expression * condition, statement * increment, statement * body)
+        : initial{initial}
+        , increment{increment}
+        , body{body}
+        , condition{condition} {}
+
+  private:
+    std::unique_ptr<statement> initial, increment, body;
+    std::unique_ptr<expression> condition;
 };
 class function_call final : public statement, public expression {
   public:
-    function_call(std::string *, std::vector<expression *> &&) {}
+    function_call(std::string * id, std::vector<expression *> && args)
+        : id{std::move(*id)} {
+        for (auto * arg : args) this->args.emplace_back(arg);
+        delete id;
+    }
+
+  private:
+    std::string id;
+    std::vector<std::unique_ptr<expression>> args;
 };
 class if_stmt final : public statement {
   public:
-    if_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * then_block,
-            [[maybe_unused]] statement * else_block) {}
+    if_stmt(expression * cond, statement * then_block, statement * else_block)
+        : cond{cond}
+        , then_block{then_block}
+        , else_block{else_block} {}
+
+  private:
+    std::unique_ptr<expression> cond;
+    std::unique_ptr<statement> then_block, else_block;
 };
 class let_stmt final : public statement {
   public:
-    let_stmt(std::string *, std::string *, expression *) {}
+    let_stmt(std::string * id, std::string * opt_type, expression * expr)
+        : id{std::move(*id)}
+        , expr{expr} {
+        if (opt_type != nullptr) this->opt_type = std::move(*opt_type);
+        delete id;
+        delete opt_type;
+    }
+
+  private:
+    std::string id;
+    std::optional<std::string> opt_type;
+    std::unique_ptr<expression> expr;
 };
 class return_stmt final : public statement {
   public:
-    explicit return_stmt([[maybe_unused]] expression * expr = nullptr) {}
+    explicit return_stmt(expression * expr = nullptr)
+        : expr{expr} {}
+
+  private:
+    std::unique_ptr<expression> expr;
 };
 class while_stmt final : public statement {
   public:
-    while_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * body) {}
+    while_stmt(expression * cond, statement * body)
+        : cond{cond}
+        , body{body} {}
+
+  private:
+    std::unique_ptr<expression> cond;
+    std::unique_ptr<statement> body;
 };
 
 } // namespace ast
