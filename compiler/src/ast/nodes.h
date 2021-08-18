@@ -1,6 +1,7 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -22,7 +23,12 @@ class expression : public virtual node {};
 // - Read-only APIs
 class typed_id final {
   public:
-    typed_id(std::string *, std::string *) {}
+    typed_id(std::string * id, std::string * type)
+        : id{std::move(*id)}
+        , type{std::move(*type)} {
+        delete id;
+        delete type;
+    }
 
     typed_id(const typed_id &) = delete;
     typed_id & operator=(const typed_id &) = delete;
@@ -31,11 +37,19 @@ class typed_id final {
     typed_id & operator=(typed_id &&) noexcept = default;
 
     ~typed_id() noexcept = default;
+
+  private:
+    std::string id;
+    std::string type;
 };
 
 class field_assignment final {
   public:
-    field_assignment(std::string *, expression *) {}
+    field_assignment(std::string * id, expression * expr)
+        : id{std::move(*id)}
+        , expr{expr} {
+        delete id;
+    }
 
     field_assignment(const field_assignment &) = delete;
     field_assignment & operator=(const field_assignment &) = delete;
@@ -44,6 +58,10 @@ class field_assignment final {
     field_assignment & operator=(field_assignment &&) noexcept = default;
 
     ~field_assignment() noexcept = default;
+
+  private:
+    std::string id;
+    std::unique_ptr<expression> expr;
 };
 
 // declarations
