@@ -2,6 +2,7 @@
 #define NODES_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -9,7 +10,18 @@ namespace ast {
 
 enum class node_type {};
 
-class node {};
+class node {
+  public:
+    node() noexcept = default;
+
+    node(const node &) = delete;
+    node & operator=(const node &) = delete;
+
+    node(node &&) noexcept = default;
+    node & operator=(node &&) noexcept = default;
+
+    virtual ~node() noexcept = default;
+};
 
 // Intermediate nodes
 class top_level : public virtual node {};
@@ -67,15 +79,48 @@ class field_assignment final {
 // declarations
 class const_decl final : public top_level, public statement {
   public:
-    const_decl(std::string *, std::string *, expression *) {}
+    const_decl(std::string * id, std::string * opt_type, expression * expr)
+        : id{std::move(*id)}
+        , expr{expr} {
+        if (opt_type != nullptr) this->opt_type = std::move(*opt_type);
+        delete id;
+        delete opt_type;
+    }
+
+  private:
+    std::string id;
+    std::optional<std::string> opt_type;
+    std::unique_ptr<expression> expr;
 };
 class function_decl final : public top_level {
   public:
-    function_decl(std::string *, std::vector<typed_id> &&, std::string *, statement *) {}
+    function_decl(std::string * id, std::vector<typed_id> && params, std::string * opt_ret_type,
+                  statement * body)
+        : id{std::move(*id)}
+        , params{std::move(params)}
+        , body{body} {
+        if (opt_ret_type != nullptr) this->opt_ret_type = std::move(*opt_ret_type);
+        delete id;
+        delete opt_ret_type;
+    }
+
+  private:
+    std::string id;
+    std::vector<typed_id> params;
+    std::optional<std::string> opt_ret_type;
+    std::unique_ptr<statement> body;
 };
 class struct_decl final : public top_level {
   public:
-    struct_decl(std::string *, std::vector<typed_id> &&) {}
+    struct_decl(std::string * id, std::vector<typed_id> && fields)
+        : id{std::move(*id)}
+        , fields{std::move(fields)} {
+        delete id;
+    }
+
+  private:
+    std::string id;
+    std::vector<typed_id> fields;
 };
 
 // expressions
