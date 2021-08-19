@@ -1,6 +1,8 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -8,12 +10,26 @@ namespace ast {
 
 enum class node_type {};
 
-class node {};
+class node {
+  public:
+    node() noexcept = default;
+
+    node(const node &) = delete;
+    node & operator=(const node &) = delete;
+
+    node(node &&) noexcept = default;
+    node & operator=(node &&) noexcept = default;
+
+    virtual ~node() noexcept = default;
+};
 
 // Intermediate nodes
 class top_level : public virtual node {};
 class statement : public virtual node {};
+using statement_ptr = std::unique_ptr<statement>;
+
 class expression : public virtual node {};
+using expression_ptr = std::unique_ptr<expression>;
 
 // The following two types are helper types.
 // They have the following properites:
@@ -22,7 +38,12 @@ class expression : public virtual node {};
 // - Read-only APIs
 class typed_id final {
   public:
-    typed_id(std::string *, std::string *) {}
+    typed_id(std::string * id, std::string * type)
+        : id{std::move(*id)}
+        , type{std::move(*type)} {
+        delete id;
+        delete type;
+    }
 
     typed_id(const typed_id &) = delete;
     typed_id & operator=(const typed_id &) = delete;
@@ -31,11 +52,19 @@ class typed_id final {
     typed_id & operator=(typed_id &&) noexcept = default;
 
     ~typed_id() noexcept = default;
+
+  private:
+    std::string id;
+    std::string type;
 };
 
 class field_assignment final {
   public:
-    field_assignment(std::string *, expression *) {}
+    field_assignment(std::string * id, expression * expr)
+        : id{std::move(*id)}
+        , expr{expr} {
+        delete id;
+    }
 
     field_assignment(const field_assignment &) = delete;
     field_assignment & operator=(const field_assignment &) = delete;
@@ -44,20 +73,57 @@ class field_assignment final {
     field_assignment & operator=(field_assignment &&) noexcept = default;
 
     ~field_assignment() noexcept = default;
+
+  private:
+    std::string id;
+    expression_ptr expr;
 };
 
 // declarations
 class const_decl final : public top_level, public statement {
   public:
-    const_decl(std::string *, std::string *, expression *) {}
+    const_decl(std::string * id, std::string * opt_type, expression * expr)
+        : id{std::move(*id)}
+        , expr{expr} {
+        if (opt_type != nullptr) this->opt_type = std::move(*opt_type);
+        delete id;
+        delete opt_type;
+    }
+
+  private:
+    std::string id;
+    std::optional<std::string> opt_type;
+    expression_ptr expr;
 };
 class function_decl final : public top_level {
   public:
-    function_decl(std::string *, std::vector<typed_id> &&, std::string *, statement *) {}
+    function_decl(std::string * id, std::vector<typed_id> && params, std::string * opt_ret_type,
+                  statement * body)
+        : id{std::move(*id)}
+        , params{std::move(params)}
+        , body{body} {
+        if (opt_ret_type != nullptr) this->opt_ret_type = std::move(*opt_ret_type);
+        delete id;
+        delete opt_ret_type;
+    }
+
+  private:
+    std::string id;
+    std::vector<typed_id> params;
+    std::optional<std::string> opt_ret_type;
+    statement_ptr body;
 };
 class struct_decl final : public top_level {
   public:
-    struct_decl(std::string *, std::vector<typed_id> &&) {}
+    struct_decl(std::string * id, std::vector<typed_id> && fields)
+        : id{std::move(*id)}
+        , fields{std::move(fields)} {
+        delete id;
+    }
+
+  private:
+    std::string id;
+    std::vector<typed_id> fields;
 };
 
 // expressions
@@ -83,25 +149,59 @@ class binary_expr final : public expression {
         bit_left,
         bit_right
     };
-    binary_expr(expression *, operation, expression *) {}
+    binary_expr(expression * lhs, operation op, expression * rhs)
+        : lhs{lhs}
+        , rhs{rhs}
+        , op{op} {}
+
+  private:
+    expression_ptr lhs, rhs;
+    operation op;
 };
 class if_expr final : public expression {
   public:
-    if_expr([[maybe_unused]] expression * cond, [[maybe_unused]] expression * true_case,
-            [[maybe_unused]] expression * false_case) {}
+    if_expr(expression * cond, expression * true_case, expression * false_case)
+        : cond{cond}
+        , true_case{true_case}
+        , false_case{false_case} {}
+
+  private:
+    expression_ptr cond, true_case, false_case;
 };
 class literal final : public expression {
   public:
     enum class type { string, integer, floating, character, boolean };
-    literal(std::string *, type) {}
+    literal(std::string * value, type typ)
+        : value{std::move(*value)}
+        , typ{typ} {
+        delete value;
+    }
+
+  private:
+    std::string value;
+    type typ;
 };
 class lvalue final : public expression {
   public:
-    explicit lvalue(std::string *, [[maybe_unused]] lvalue * parent = nullptr) {}
+    explicit lvalue(std::string * id, lvalue * parent = nullptr)
+        : id{std::move(*id)}
+        , parent{parent} {
+        delete id;
+    }
+
+  private:
+    std::string id;
+    std::unique_ptr<lvalue> parent;
 };
 class struct_init final : public expression {
   public:
-    struct_init(std::string *, std::vector<field_assignment> &&) {}
+    struct_init(std::string * type, std::vector<field_assignment> && fields)
+        : type{std::move(*type)}
+        , fields{std::move(fields)} {}
+
+  private:
+    std::string type;
+    std::vector<field_assignment> fields;
 };
 class unary_expr final : public expression {
   public:
@@ -111,7 +211,13 @@ class unary_expr final : public expression {
         bit_not,
     };
 
-    unary_expr(operation, expression *) {}
+    unary_expr(operation op, expression * expr)
+        : op{op}
+        , expr{expr} {}
+
+  private:
+    operation op;
+    expression_ptr expr;
 };
 
 // statements
@@ -130,38 +236,93 @@ class assignment final : public statement {
         bit_right,
         bit_xor,
     };
-    assignment(lvalue *, operation, expression *) {}
+    assignment(lvalue * dest, operation op, expression * expr)
+        : dest{dest}
+        , op{op}
+        , expr{expr} {}
+
+  private:
+    std::unique_ptr<lvalue> dest;
+    operation op;
+    expression_ptr expr;
 };
 class block_stmt final : public statement {
   public:
     block_stmt() = default;
-    explicit block_stmt(std::vector<statement *> &&) {}
+    explicit block_stmt(std::vector<statement *> && stmts) {
+        for (auto * stmt : stmts) this->stmts.emplace_back(stmt);
+    }
+
+  private:
+    std::vector<statement_ptr> stmts;
 };
 class for_stmt final : public statement {
   public:
-    for_stmt([[maybe_unused]] statement * initial, [[maybe_unused]] expression * condition,
-             [[maybe_unused]] statement * increment, [[maybe_unused]] statement * body) {}
+    for_stmt(statement * initial, expression * condition, statement * increment, statement * body)
+        : initial{initial}
+        , increment{increment}
+        , body{body}
+        , condition{condition} {}
+
+  private:
+    statement_ptr initial, increment, body;
+    expression_ptr condition;
 };
 class function_call final : public statement, public expression {
   public:
-    function_call(std::string *, std::vector<expression *> &&) {}
+    function_call(std::string * id, std::vector<expression *> && args)
+        : id{std::move(*id)} {
+        for (auto * arg : args) this->args.emplace_back(arg);
+        delete id;
+    }
+
+  private:
+    std::string id;
+    std::vector<expression_ptr> args;
 };
 class if_stmt final : public statement {
   public:
-    if_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * then_block,
-            [[maybe_unused]] statement * else_block) {}
+    if_stmt(expression * cond, statement * then_block, statement * else_block)
+        : cond{cond}
+        , then_block{then_block}
+        , else_block{else_block} {}
+
+  private:
+    expression_ptr cond;
+    statement_ptr then_block, else_block;
 };
 class let_stmt final : public statement {
   public:
-    let_stmt(std::string *, std::string *, expression *) {}
+    let_stmt(std::string * id, std::string * opt_type, expression * expr)
+        : id{std::move(*id)}
+        , expr{expr} {
+        if (opt_type != nullptr) this->opt_type = std::move(*opt_type);
+        delete id;
+        delete opt_type;
+    }
+
+  private:
+    std::string id;
+    std::optional<std::string> opt_type;
+    expression_ptr expr;
 };
 class return_stmt final : public statement {
   public:
-    explicit return_stmt([[maybe_unused]] expression * expr = nullptr) {}
+    explicit return_stmt(expression * expr = nullptr)
+        : expr{expr} {}
+
+  private:
+    expression_ptr expr;
 };
 class while_stmt final : public statement {
   public:
-    while_stmt([[maybe_unused]] expression * cond, [[maybe_unused]] statement * body) {}
+    while_stmt(expression * cond, statement * body)
+        : cond{cond}
+        , body{body} {}
+
+  private:
+    expression_ptr cond;
+    statement_ptr body;
 };
 
 } // namespace ast

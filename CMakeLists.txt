@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 add_compile_options(
-    -Wall -Wextra -Werror -Wconversion -Wmissing-declarations
+    -Wall -Wextra -Werror -Wconversion -Wmissing-declarations -Wsuggest-override
     )
 
 # TODO: Add a common header for things both the compiler and VM need
