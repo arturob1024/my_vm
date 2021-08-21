@@ -25,6 +25,7 @@ int main(const int arg_count, const char * const * const args) {
 
     switch (const auto yyparse_code = yyparse(); yyparse_code) {
     case 0:
+        std::cout << "Parsed " << top_lvl_items.size() << " top level items" << std::endl;
         break;
     case 1:
         puts("Invalid input");
