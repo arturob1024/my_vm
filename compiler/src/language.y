@@ -2,6 +2,8 @@
 %{
     #include "flex_bison.h"
 
+    // TODO: Better error handling in the parser
+
     static void yyerror(const char * msg){
         std::cerr << "Error: " << msg << std::endl;
     }
