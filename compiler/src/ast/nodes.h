@@ -1,6 +1,7 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <iosfwd>
 #include <memory>
 #include <optional>
 #include <string>
@@ -54,6 +55,8 @@ class typed_id final {
     ~typed_id() noexcept = default;
 
   private:
+    friend std::ostream & operator<<(std::ostream &, const typed_id &) noexcept;
+
     std::string id;
     std::string type;
 };
@@ -75,6 +78,8 @@ class field_assignment final {
     ~field_assignment() noexcept = default;
 
   private:
+    friend std::ostream & operator<<(std::ostream &, const field_assignment &) noexcept;
+
     std::string id;
     expression_ptr expr;
 };
