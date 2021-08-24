@@ -9,6 +9,9 @@ using namespace ast;
 #include <string>
 #include <vector>
 
+// TODO: Support multiple modules
+inline static std::vector<std::unique_ptr<top_level>> top_lvl_items;
+
 int yylex();
 extern "C" int yywrap();
 

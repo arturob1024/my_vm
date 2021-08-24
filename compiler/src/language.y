@@ -2,6 +2,8 @@
 %{
     #include "flex_bison.h"
 
+    // TODO: Better error handling in the parser
+
     static void yyerror(const char * msg){
         std::cerr << "Error: " << msg << std::endl;
     }
@@ -63,7 +65,7 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 %nterm <expr> expr primitive struct_creation literal
 %nterm <stmt> oneline_stmt else_block if_stmt return_stmt block_stmt compound_stmt stmt
 %nterm <stmt> while_stmt for_stmt assign_or_decl_stmt assignment decl_stmt function_body
-%nterm <top_lvl> function struct_decl
+%nterm <top_lvl> function struct_decl top_lvl_item
 %nterm <func_call> function_call
 %nterm <const_declaration> const_decl
 %nterm <lval> lvalue
@@ -91,12 +93,12 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 
 /* { $$ = $1; } is the implied action. */
 
-program: top_lvl_item
-    | program top_lvl_item
+program: top_lvl_item { top_lvl_items.emplace_back($1); }
+    | program top_lvl_item { top_lvl_items.emplace_back($2); }
     ;
 
 top_lvl_item: function
-    | const_decl
+    | const_decl { $$ = dynamic_cast<top_level *>($1); }
     | struct_decl
     ;
 
