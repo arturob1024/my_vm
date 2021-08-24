@@ -1,5 +1,5 @@
 #!/bin/bash
 
-files=$(git ls-files -- '*.cpp' '*.h')
-
-clang-format -i -style=file "$files"
+for file in $(git ls-files -- '*.cpp' '*.h'); do
+    clang-format -i -style=file "$file"
+done
