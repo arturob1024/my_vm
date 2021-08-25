@@ -1,11 +1,12 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "ast/nodes.h"
+#include "ast/nodes_forward.h"
 
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <vector>
 
 class modul;
 using module_and_file = std::pair<std::unique_ptr<modul>, FILE *>;
@@ -16,7 +17,7 @@ class modul final {
     static module_and_file open_module(const char * path);
     static module_and_file open_stdin();
 
-    void add_top_level_item(ast::top_level * top_lvl) { top_lvl_items.emplace_back(top_lvl); }
+    void add_top_level_item(ast::top_level * top_lvl);
 
     [[nodiscard]] size_t top_level_item_count() const noexcept { return top_lvl_items.size(); }
 
@@ -33,7 +34,7 @@ class modul final {
         : filename{std::move(filename)} {}
 
     std::string filename;
-    std::vector<std::unique_ptr<ast::top_level>> top_lvl_items;
+    std::vector<ast::top_level_ptr> top_lvl_items;
 };
 
 #endif

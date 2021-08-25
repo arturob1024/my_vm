@@ -1,14 +1,14 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include "nodes_forward.h"
+
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace ast {
-
-enum class node_type {};
 
 class node {
   public:
@@ -26,10 +26,7 @@ class node {
 // Intermediate nodes
 class top_level : public virtual node {};
 class statement : public virtual node {};
-using statement_ptr = std::unique_ptr<statement>;
-
 class expression : public virtual node {};
-using expression_ptr = std::unique_ptr<expression>;
 
 // The following two types are helper types.
 // They have the following properites:
