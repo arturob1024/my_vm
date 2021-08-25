@@ -1,5 +1,6 @@
 #include "compiler/tokens.hpp"
 #include "flex_bison.h"
+#include "module.h"
 #include "parser.h"
 
 #include <cstdio>
@@ -8,24 +9,28 @@
 int main(const int arg_count, const char * const * const args) {
 
     yyin = nullptr;
-    if (arg_count > 1) {
+    if (arg_count <= 1) {
+        // open stdin
+
+        auto [open_module, input] = modul::open_stdin();
+        yyin = input;
+        current_module = std::move(open_module);
+    } else {
         // use the first arg as a input filename
-        if (auto * input_file = fopen(args[1], "r"); input_file != nullptr) {
+        auto [open_module, input_file] = modul::open_module(args[1]);
+        if (input_file != nullptr) {
             yyin = input_file;
+            current_module = std::move(open_module);
         } else {
             perror("Opening input");
+            exit(1);
         }
-    }
-
-    // Fallback case: use standard input
-    if (yyin == nullptr) {
-        puts("Using standard input");
-        yyin = stdin;
     }
 
     switch (const auto yyparse_code = yyparse(); yyparse_code) {
     case 0:
-        std::cout << "Parsed " << top_lvl_items.size() << " top level items" << std::endl;
+        std::cout << "Parsed " << current_module->top_level_item_count() << " top level items"
+                  << std::endl;
         break;
     case 1:
         puts("Invalid input");

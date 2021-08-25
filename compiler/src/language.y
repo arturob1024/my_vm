@@ -93,8 +93,8 @@ A sequence of pointers allows polymorphism, otherwise there is none.
 
 /* { $$ = $1; } is the implied action. */
 
-program: top_lvl_item { top_lvl_items.emplace_back($1); }
-    | program top_lvl_item { top_lvl_items.emplace_back($2); }
+program: top_lvl_item { current_module->add_top_level_item($1); }
+    | program top_lvl_item { current_module->add_top_level_item($2); }
     ;
 
 top_lvl_item: function
