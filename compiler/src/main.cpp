@@ -39,10 +39,10 @@ int main(const int arg_count, const char * const * const args) {
         break;
     case 1:
         puts("Invalid input");
-        break;
+        exit(0);
     case 2:
         puts("Memory exhuasted");
-        break;
+        exit(0);
     default:
         std::cout << "Unknown yyparse code: " << yyparse_code << std::endl;
         exit(0);
