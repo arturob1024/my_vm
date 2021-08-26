@@ -3,8 +3,11 @@
 #include "module.h"
 #include "parser.h"
 
+#include <cassert>
 #include <cstdio>
 #include <iostream>
+
+std::unique_ptr<modul> current_module;
 
 int main(const int arg_count, const char * const * const args) {
 
@@ -26,6 +29,8 @@ int main(const int arg_count, const char * const * const args) {
             exit(1);
         }
     }
+
+    assert(current_module != nullptr);
 
     switch (const auto yyparse_code = yyparse(); yyparse_code) {
     case 0:

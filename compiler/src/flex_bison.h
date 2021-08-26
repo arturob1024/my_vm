@@ -11,7 +11,7 @@
 using namespace ast;
 
 // TODO: Support multiple modules
-inline static std::unique_ptr<modul> current_module;
+extern std::unique_ptr<modul> current_module;
 
 int yylex();
 extern "C" int yywrap();
