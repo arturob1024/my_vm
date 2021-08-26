@@ -4,6 +4,7 @@
 #include "ast/nodes_forward.h"
 
 #include <cstdio>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -46,6 +47,24 @@ class modul final {
 
     std::string filename;
     std::vector<ast::top_level_ptr> top_lvl_items;
+
+    enum class opcode : uint8_t {};
+
+    struct instruction {
+        opcode op;
+        // TODO: Use an union?
+    };
+
+    struct function_details {
+        std::vector<instruction> instructions;
+        std::map<std::string, std::string> parameters;
+        std::string return_type;
+
+        function_details(const std::vector<ast::typed_id> &, const std::optional<std::string> &);
+    };
+
+    std::map<std::string, function_details> functions;
+    std::string current_function;
 };
 
 #endif

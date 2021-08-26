@@ -19,9 +19,14 @@ void modul::register_global(std::string id, const std::optional<std::string> &, 
               << std::endl;
 }
 
-void modul::register_function(std::string id, const std::vector<ast::typed_id> &,
-                              const std::optional<std::string> &, ast::statement &) {
+void modul::register_function(std::string id, const std::vector<ast::typed_id> & params,
+                              const std::optional<std::string> & ret_type, ast::statement & body) {
     std::cout << "Registered a function named " << id << std::endl;
+
+    functions.emplace(id, function_details{params, ret_type});
+    current_function = std::move(id);
+    body.build(*this);
+    current_function.clear();
 }
 
 void modul::register_struct(std::string id, const std::vector<ast::typed_id> &) {
@@ -33,5 +38,17 @@ void modul::build() {
     for (auto & top_lvl : top_lvl_items) {
         assert(top_lvl != nullptr);
         top_lvl->build(*this);
+    }
+}
+
+modul::function_details::function_details(const std::vector<ast::typed_id> & params,
+                                          const std::optional<std::string> & ret_type)
+    : return_type{ret_type.value_or("")} {
+    for (auto & param : params) {
+        if (auto [iter, previously_seen] = parameters.insert(param.id_and_type());
+            previously_seen) {
+            std::cout << "Error: parameter seen twice: " << iter->first << std::endl;
+            exit(1);
+        }
     }
 }

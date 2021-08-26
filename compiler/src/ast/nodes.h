@@ -61,6 +61,8 @@ class typed_id final {
 
     ~typed_id() noexcept = default;
 
+    [[nodiscard]] std::pair<std::string, std::string> id_and_type() const { return {id, type}; }
+
   private:
     std::string id;
     std::string type;
@@ -269,7 +271,9 @@ class block_stmt final : public statement {
         for (auto * stmt : stmts) this->stmts.emplace_back(stmt);
     }
 
-    void build(modul &) const final {}
+    void build(modul & mod) const final {
+        for (auto & stmt : stmts) stmt->build(mod);
+    }
 
   private:
     std::vector<statement_ptr> stmts;
