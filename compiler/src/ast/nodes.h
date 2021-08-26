@@ -1,6 +1,7 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include "module.h"
 #include "nodes_forward.h"
 
 #include <memory>
@@ -24,9 +25,19 @@ class node {
 };
 
 // Intermediate nodes
-class top_level : public virtual node {};
-class statement : public virtual node {};
-class expression : public virtual node {};
+class top_level : public virtual node {
+  public:
+    virtual void build(modul &) const = 0;
+};
+
+class statement : public virtual node {
+  public:
+    virtual void build(modul &) const = 0;
+};
+
+class expression : public virtual node {
+    // TODO: Find a good representation for "compiled" expressions
+};
 
 // The following two types are helper types.
 // They have the following properites:
@@ -87,6 +98,8 @@ class const_decl final : public top_level, public statement {
         delete opt_type;
     }
 
+    void build(modul &) const final {}
+
   private:
     std::string id;
     std::optional<std::string> opt_type;
@@ -104,6 +117,8 @@ class function_decl final : public top_level {
         delete opt_ret_type;
     }
 
+    void build(modul &) const final {}
+
   private:
     std::string id;
     std::vector<typed_id> params;
@@ -117,6 +132,8 @@ class struct_decl final : public top_level {
         , fields{std::move(fields)} {
         delete id;
     }
+
+    void build(modul &) const final {}
 
   private:
     std::string id;
@@ -238,6 +255,8 @@ class assignment final : public statement {
         , op{op}
         , expr{expr} {}
 
+    void build(modul &) const final {}
+
   private:
     std::unique_ptr<lvalue> dest;
     operation op;
@@ -250,6 +269,8 @@ class block_stmt final : public statement {
         for (auto * stmt : stmts) this->stmts.emplace_back(stmt);
     }
 
+    void build(modul &) const final {}
+
   private:
     std::vector<statement_ptr> stmts;
 };
@@ -260,6 +281,8 @@ class for_stmt final : public statement {
         , increment{increment}
         , body{body}
         , condition{condition} {}
+
+    void build(modul &) const final {}
 
   private:
     statement_ptr initial, increment, body;
@@ -273,6 +296,8 @@ class function_call final : public statement, public expression {
         delete id;
     }
 
+    void build(modul &) const final {}
+
   private:
     std::string id;
     std::vector<expression_ptr> args;
@@ -283,6 +308,8 @@ class if_stmt final : public statement {
         : cond{cond}
         , then_block{then_block}
         , else_block{else_block} {}
+
+    void build(modul &) const final {}
 
   private:
     expression_ptr cond;
@@ -298,6 +325,8 @@ class let_stmt final : public statement {
         delete opt_type;
     }
 
+    void build(modul &) const final {}
+
   private:
     std::string id;
     std::optional<std::string> opt_type;
@@ -308,6 +337,8 @@ class return_stmt final : public statement {
     explicit return_stmt(expression * expr = nullptr)
         : expr{expr} {}
 
+    void build(modul &) const final {}
+
   private:
     expression_ptr expr;
 };
@@ -316,6 +347,8 @@ class while_stmt final : public statement {
     while_stmt(expression * cond, statement * body)
         : cond{cond}
         , body{body} {}
+
+    void build(modul &) const final {}
 
   private:
     expression_ptr cond;
