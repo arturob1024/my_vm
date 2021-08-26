@@ -47,4 +47,6 @@ int main(const int arg_count, const char * const * const args) {
         std::cout << "Unknown yyparse code: " << yyparse_code << std::endl;
         exit(0);
     }
+
+    current_module->build();
 }

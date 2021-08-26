@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -17,9 +18,19 @@ class modul final {
     static module_and_file open_module(const char * path);
     static module_and_file open_stdin();
 
+    void build();
+
     void add_top_level_item(ast::top_level * top_lvl);
 
     [[nodiscard]] size_t top_level_item_count() const noexcept { return top_lvl_items.size(); }
+
+    void register_global(std::string id, const std::optional<std::string> & type,
+                         ast::expression & value, bool constant);
+
+    void register_function(std::string id, const std::vector<ast::typed_id> & params,
+                           const std::optional<std::string> & type, ast::statement & body);
+
+    void register_struct(std::string id, const std::vector<ast::typed_id> & params);
 
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;

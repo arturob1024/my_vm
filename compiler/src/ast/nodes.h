@@ -98,7 +98,7 @@ class const_decl final : public top_level, public statement {
         delete opt_type;
     }
 
-    void build(modul &) const final {}
+    void build(modul & mod) const final { mod.register_global(id, opt_type, *expr, true); }
 
   private:
     std::string id;
@@ -117,7 +117,7 @@ class function_decl final : public top_level {
         delete opt_ret_type;
     }
 
-    void build(modul &) const final {}
+    void build(modul & mod) const final { mod.register_function(id, params, opt_ret_type, *body); }
 
   private:
     std::string id;
@@ -133,7 +133,7 @@ class struct_decl final : public top_level {
         delete id;
     }
 
-    void build(modul &) const final {}
+    void build(modul & mod) const final { mod.register_struct(id, fields); }
 
   private:
     std::string id;
