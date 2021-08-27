@@ -11,7 +11,7 @@
 
 %union{
     int token;
-    assignment::operation assign_op;
+    assignment_operation assign_op;
     std::string * string;
 
 /* General pointer types */
@@ -203,27 +203,27 @@ args: %empty        { $$ = new std::vector<expression*>{}; }
     ;
 
 expr: primitive
-    | expr "+" expr                         { $$ = new binary_expr{$1, binary_expr::operation::add, $3}; }
-    | expr "-" expr                         { $$ = new binary_expr{$1, binary_expr::operation::sub, $3}; }
-    | expr "*" expr                         { $$ = new binary_expr{$1, binary_expr::operation::mul, $3}; }
-    | expr "/" expr                         { $$ = new binary_expr{$1, binary_expr::operation::div, $3}; }
-    | expr "&&" expr                        { $$ = new binary_expr{$1, binary_expr::operation::boolean_and, $3}; }
-    | expr "||" expr                        { $$ = new binary_expr{$1, binary_expr::operation::boolean_or, $3}; }
-    | expr "<=" expr                        { $$ = new binary_expr{$1, binary_expr::operation::less_eq, $3}; }
-    | expr "<" expr                         { $$ = new binary_expr{$1, binary_expr::operation::less, $3}; }
-    | expr ">=" expr                        { $$ = new binary_expr{$1, binary_expr::operation::greater_eq, $3}; }
-    | expr ">" expr                         { $$ = new binary_expr{$1, binary_expr::operation::greater, $3}; }
-    | expr "==" expr                        { $$ = new binary_expr{$1, binary_expr::operation::equal, $3}; }
-    | expr "!=" expr                        { $$ = new binary_expr{$1, binary_expr::operation::not_equal, $3}; }
-    | expr "&" expr                         { $$ = new binary_expr{$1, binary_expr::operation::bit_and, $3}; }
-    | expr "|" expr                         { $$ = new binary_expr{$1, binary_expr::operation::bit_or, $3}; }
-    | expr "<<" expr                        { $$ = new binary_expr{$1, binary_expr::operation::bit_right, $3}; }
-    | expr ">>" expr                        { $$ = new binary_expr{$1, binary_expr::operation::bit_left, $3}; }
-    | expr "^" expr                         { $$ = new binary_expr{$1, binary_expr::operation::bit_xor, $3}; }
-    | expr "%" expr                         { $$ = new binary_expr{$1, binary_expr::operation::rem, $3}; }
-    | "!" expr                              { $$ = new unary_expr{unary_expr::operation::boolean_not, $2}; }
-    | "-" expr    %prec negate              { $$ = new unary_expr{unary_expr::operation::negation, $2}; }
-    | "~" expr                              { $$ = new unary_expr{unary_expr::operation::bit_not, $2}; }
+    | expr "+" expr                         { $$ = new binary_expr{$1, binary_operation::add, $3}; }
+    | expr "-" expr                         { $$ = new binary_expr{$1, binary_operation::sub, $3}; }
+    | expr "*" expr                         { $$ = new binary_expr{$1, binary_operation::mul, $3}; }
+    | expr "/" expr                         { $$ = new binary_expr{$1, binary_operation::div, $3}; }
+    | expr "&&" expr                        { $$ = new binary_expr{$1, binary_operation::boolean_and, $3}; }
+    | expr "||" expr                        { $$ = new binary_expr{$1, binary_operation::boolean_or, $3}; }
+    | expr "<=" expr                        { $$ = new binary_expr{$1, binary_operation::less_eq, $3}; }
+    | expr "<" expr                         { $$ = new binary_expr{$1, binary_operation::less, $3}; }
+    | expr ">=" expr                        { $$ = new binary_expr{$1, binary_operation::greater_eq, $3}; }
+    | expr ">" expr                         { $$ = new binary_expr{$1, binary_operation::greater, $3}; }
+    | expr "==" expr                        { $$ = new binary_expr{$1, binary_operation::equal, $3}; }
+    | expr "!=" expr                        { $$ = new binary_expr{$1, binary_operation::not_equal, $3}; }
+    | expr "&" expr                         { $$ = new binary_expr{$1, binary_operation::bit_and, $3}; }
+    | expr "|" expr                         { $$ = new binary_expr{$1, binary_operation::bit_or, $3}; }
+    | expr "<<" expr                        { $$ = new binary_expr{$1, binary_operation::bit_right, $3}; }
+    | expr ">>" expr                        { $$ = new binary_expr{$1, binary_operation::bit_left, $3}; }
+    | expr "^" expr                         { $$ = new binary_expr{$1, binary_operation::bit_xor, $3}; }
+    | expr "%" expr                         { $$ = new binary_expr{$1, binary_operation::rem, $3}; }
+    | "!" expr                              { $$ = new unary_expr{unary_operation::boolean_not, $2}; }
+    | "-" expr    %prec negate              { $$ = new unary_expr{unary_operation::negation, $2}; }
+    | "~" expr                              { $$ = new unary_expr{unary_operation::bit_not, $2}; }
     | t_if "(" expr ")" expr t_else expr    { $$ = new if_expr{$3, $5, $7}; }
     ;
 
@@ -242,22 +242,22 @@ field_assignments: %empty               { $$ = new std::vector<field_assignment>
     | id "=" expr "," field_assignments { $$ = $5; $$->emplace_back($1, $3); }
     ;
 
-assign_op: "=" { $$ = assignment::operation::assign; }
-    | "+="     { $$ = assignment::operation::add; }
-    | "-="     { $$ = assignment::operation::sub; }
-    | "/="     { $$ = assignment::operation::div; }
-    | "%="     { $$ = assignment::operation::remainder; }
-    | "<<="    { $$ = assignment::operation::bit_left; }
-    | ">>="    { $$ = assignment::operation::bit_right; }
-    | "&="     { $$ = assignment::operation::bit_and; }
-    | "|="     { $$ = assignment::operation::bit_or; }
-    | "^="     { $$ = assignment::operation::bit_xor; }
-    | "*="     { $$ = assignment::operation::mul; }
+assign_op: "=" { $$ = assignment_operation::assign; }
+    | "+="     { $$ = assignment_operation::add; }
+    | "-="     { $$ = assignment_operation::sub; }
+    | "/="     { $$ = assignment_operation::div; }
+    | "%="     { $$ = assignment_operation::remainder; }
+    | "<<="    { $$ = assignment_operation::bit_left; }
+    | ">>="    { $$ = assignment_operation::bit_right; }
+    | "&="     { $$ = assignment_operation::bit_and; }
+    | "|="     { $$ = assignment_operation::bit_or; }
+    | "^="     { $$ = assignment_operation::bit_xor; }
+    | "*="     { $$ = assignment_operation::mul; }
     ;
 
-literal: string_literal { $$ = new literal{$1, literal::type::string}; }
-    | integer_literal   { $$ = new literal{$1, literal::type::integer}; }
-    | float_literal     { $$ = new literal{$1, literal::type::floating}; }
-    | boolean_literal   { $$ = new literal{$1, literal::type::boolean}; }
-    | char_literal      { $$ = new literal{$1, literal::type::character}; }
+literal: string_literal { $$ = new literal{$1, type::string}; }
+    | integer_literal   { $$ = new literal{$1, type::integer}; }
+    | float_literal     { $$ = new literal{$1, type::floating}; }
+    | boolean_literal   { $$ = new literal{$1, type::boolean}; }
+    | char_literal      { $$ = new literal{$1, type::character}; }
     ;

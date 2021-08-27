@@ -145,34 +145,14 @@ class struct_decl final : public top_level {
 // expressions
 class binary_expr final : public expression {
   public:
-    enum class operation {
-        add,
-        sub,
-        mul,
-        div,
-        rem,
-        boolean_and,
-        boolean_or,
-        less_eq,
-        less,
-        greater_eq,
-        greater,
-        equal,
-        not_equal,
-        bit_and,
-        bit_or,
-        bit_xor,
-        bit_left,
-        bit_right
-    };
-    binary_expr(expression * lhs, operation op, expression * rhs)
+    binary_expr(expression * lhs, binary_operation op, expression * rhs)
         : lhs{lhs}
         , rhs{rhs}
         , op{op} {}
 
   private:
     expression_ptr lhs, rhs;
-    operation op;
+    binary_operation op;
 };
 class if_expr final : public expression {
   public:
@@ -186,7 +166,6 @@ class if_expr final : public expression {
 };
 class literal final : public expression {
   public:
-    enum class type { string, integer, floating, character, boolean };
     literal(std::string * value, type typ)
         : value{std::move(*value)}
         , typ{typ} {
@@ -221,38 +200,19 @@ class struct_init final : public expression {
 };
 class unary_expr final : public expression {
   public:
-    enum class operation {
-        boolean_not,
-        negation,
-        bit_not,
-    };
-
-    unary_expr(operation op, expression * expr)
+    unary_expr(unary_operation op, expression * expr)
         : op{op}
         , expr{expr} {}
 
   private:
-    operation op;
+    unary_operation op;
     expression_ptr expr;
 };
 
 // statements
 class assignment final : public statement {
   public:
-    enum class operation {
-        assign,
-        add,
-        sub,
-        mul,
-        div,
-        remainder,
-        bit_and,
-        bit_or,
-        bit_left,
-        bit_right,
-        bit_xor,
-    };
-    assignment(lvalue * dest, operation op, expression * expr)
+    assignment(lvalue * dest, assignment_operation op, expression * expr)
         : dest{dest}
         , op{op}
         , expr{expr} {}
@@ -261,7 +221,7 @@ class assignment final : public statement {
 
   private:
     std::unique_ptr<lvalue> dest;
-    operation op;
+    assignment_operation op;
     expression_ptr expr;
 };
 class block_stmt final : public statement {
