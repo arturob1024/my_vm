@@ -13,6 +13,12 @@
 class modul;
 using module_and_file = std::pair<std::unique_ptr<modul>, FILE *>;
 
+struct compiled_expr {
+  private:
+    unsigned reg_num;
+    std::string type;
+};
+
 class modul final {
 
   public:
@@ -25,6 +31,8 @@ class modul final {
 
     [[nodiscard]] size_t top_level_item_count() const noexcept { return top_lvl_items.size(); }
 
+    // Top level item compilation
+
     void register_global(std::string id, const std::optional<std::string> & type,
                          ast::expression & value, bool constant);
 
@@ -33,7 +41,15 @@ class modul final {
 
     void register_struct(std::string id, const std::vector<ast::typed_id> & params);
 
+    // Statment compilation
+
     void call_function(std::string id);
+
+    // Expression compilation
+
+    compiled_expr compile_binary_op(ast::binary_operation, compiled_expr lhs, compiled_expr rhs) {
+        return {};
+    }
 
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;

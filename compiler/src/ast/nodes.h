@@ -36,7 +36,8 @@ class statement : public virtual node {
 };
 
 class expression : public virtual node {
-    // TODO: Find a good representation for "compiled" expressions
+  public:
+    virtual compiled_expr compile(modul &) const = 0;
 };
 
 // The following two types are helper types.
@@ -142,6 +143,8 @@ class binary_expr final : public expression {
         , rhs{rhs}
         , op{op} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     expression_ptr lhs, rhs;
     binary_operation op;
@@ -153,6 +156,8 @@ class if_expr final : public expression {
         , true_case{true_case}
         , false_case{false_case} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     expression_ptr cond, true_case, false_case;
 };
@@ -163,6 +168,8 @@ class literal final : public expression {
         , typ{typ} {
         delete value;
     }
+
+    compiled_expr compile(modul &) const final { return {}; }
 
   private:
     std::string value;
@@ -176,6 +183,8 @@ class lvalue final : public expression {
         delete id;
     }
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     std::string id;
     std::unique_ptr<lvalue> parent;
@@ -186,6 +195,8 @@ class struct_init final : public expression {
         : type{std::move(*type)}
         , fields{std::move(fields)} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     std::string type;
     std::vector<field_assignment> fields;
@@ -195,6 +206,8 @@ class unary_expr final : public expression {
     unary_expr(unary_operation op, expression * expr)
         : op{op}
         , expr{expr} {}
+
+    compiled_expr compile(modul &) const final { return {}; }
 
   private:
     unary_operation op;
@@ -261,6 +274,8 @@ class function_call final : public statement, public expression {
 
         mod.call_function(id);
     }
+
+    compiled_expr compile(modul &) const final { return {}; }
 
   private:
     std::string id;
