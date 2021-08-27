@@ -265,19 +265,18 @@ class function_call final : public statement, public expression {
         delete id;
     }
 
-    void build(modul & mod) const final {
-        /*
-        for (auto & expr : args) {
-            // TODO: store the evaled expressions
-        }
-        */
-
-        mod.call_function(id);
-    }
+    void build(modul & mod) const final { mod.call_function(id, compile_args(mod)); }
 
     compiled_expr compile(modul &) const final { return {}; }
 
   private:
+    std::vector<compiled_expr> compile_args(modul & mod) const {
+        std::vector<compiled_expr> compiled_args;
+        compiled_args.reserve(args.size());
+        for (auto & arg : args) compiled_args.push_back(arg->compile(mod));
+        return compiled_args;
+    }
+
     std::string id;
     std::vector<expression_ptr> args;
 };
