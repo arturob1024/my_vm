@@ -229,7 +229,7 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
 
     std::map<uint32_t, uint32_t> func_addrs;
     for (auto & func : funcs) {
-        func_addrs.insert({func.number, vm_text_start + segment_data.size() * 4});
+        func_addrs.insert({func.number, vm_text_start + segment_data.size() * 4 - text_start});
 
         for (auto & instruction : func.instructions) {
             // fill in jal info
@@ -253,13 +253,21 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
         segment_table.push_back(segment.length);
         segment_table.push_back(segment.vm_addr);
         uint32_t temp = 0;
-        for (auto i = 0ul; i < segment.name.size() or i % 4 != 0; ++i) {
-            temp <<= 8;
-            temp |= (i < segment.name.size() ? segment.name.at(i) : 0);
+        auto i = 0ul;
+        for (; i < segment.name.size(); ++i) {
             if (i != 0 and i % 4 == 0) {
                 segment_table.push_back(temp);
                 temp = 0;
             }
+            temp <<= 8;
+            temp |= (i < segment.name.size() ? segment.name.at(i) : 0);
+        }
+        if ((segment.name.size() + 1) % 4 != 0) {
+            while (i % 4 != 0) {
+                temp <<= 8;
+                ++i;
+            }
+            segment_table.push_back(temp);
         }
     }
 
