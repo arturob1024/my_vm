@@ -16,10 +16,7 @@ class modul;
 using module_and_file = std::pair<std::unique_ptr<modul>, FILE *>;
 using id_and_type = std::pair<std::string, std::string>;
 
-struct compiled_expr {
-    uint8_t reg_num;
-    std::string type;
-};
+struct compiled_expr;
 
 class modul final {
 
@@ -28,6 +25,7 @@ class modul final {
     static module_and_file open_stdin();
 
     void build();
+    void write();
 
     void add_top_level_item(ast::top_level * top_lvl);
 
@@ -51,9 +49,7 @@ class modul final {
 
     compiled_expr compile_literal(const std::string & value, ast::type typ);
 
-    compiled_expr compile_binary_op(ast::binary_operation, compiled_expr, compiled_expr) {
-        return {};
-    }
+    compiled_expr compile_binary_op(ast::binary_operation, compiled_expr, compiled_expr);
 
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;
@@ -63,9 +59,8 @@ class modul final {
 
     ~modul() noexcept = default;
 
-  private:
     enum reg : uint8_t {
-        zero,
+        zero = 0,
         v0,
         v1,
         a0,
@@ -73,6 +68,7 @@ class modul final {
         a2,
         a3,
         a4,
+        a5,
         temp,
         s0,
         s1,
@@ -98,6 +94,9 @@ class modul final {
         lr,
     };
 
+    static_assert(reg::lr == 31);
+
+  private:
     explicit modul(std::string filename)
         : filename{std::move(filename)} {
         functions.emplace(
@@ -111,9 +110,7 @@ class modul final {
     std::string filename;
     std::vector<ast::top_level_ptr> top_lvl_items;
 
-    enum class func_num : uint8_t {
-
-    };
+    enum class func_num : uint8_t {};
 
     enum class opcode : uint8_t {
         r_type = 0,
@@ -124,21 +121,25 @@ class modul final {
         syscall = 63,
     };
 
-    struct r_type {};
+    struct r_type {
+        reg rd, rs1, rs2;
+        uint8_t shamt;
+        func_num func;
+    };
     struct i_type {
-        uint8_t rd;
-        uint8_t rs;
+        reg rd;
+        reg rs;
         uint16_t imm;
     };
     struct j_type {
-        uint8_t rd;
+        reg rd;
         uint32_t imm;
     };
     struct s_type {
-        uint8_t rd;
-        uint8_t rs1;
-        uint8_t rs2;
-        uint8_t rs3;
+        reg rd;
+        reg rs1;
+        reg rs2;
+        reg rs3;
         uint8_t func;
     };
 
@@ -150,10 +151,19 @@ class modul final {
         instruction(opcode op, instruction_data && data)
             : op{op}
             , data{std::move(data)} {}
+
+        [[nodiscard]] operator uint32_t() const;
     };
 
     void add_instruction(opcode, instruction_data &&);
-    uint8_t alloc_reg();
+    reg alloc_reg();
+
+    struct program_data {
+        std::vector<uint32_t> segment_table;
+        std::vector<uint32_t> segment_data;
+        uint32_t exec_start;
+    };
+    program_data layout_segments(uint32_t start_segment_table);
 
     struct function_details {
         std::vector<instruction> instructions;
@@ -178,9 +188,16 @@ class modul final {
 
     std::set<reg> used_registers;
 
-    static constexpr uint32_t data_segment_start = 0x4000;
+    static constexpr uint32_t vm_text_start = 0x5000;
+    static constexpr uint32_t vm_data_start = 0x4000;
+    static constexpr uint32_t sp_start = 0x3000'0000;
     std::vector<uint8_t> data_segment;
     uint32_t func_num = 0;
+};
+
+struct compiled_expr {
+    modul::reg reg_num;
+    std::string type;
 };
 
 #endif
