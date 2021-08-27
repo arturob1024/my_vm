@@ -2,15 +2,16 @@
 #define FLEX_BISON_H
 
 #include "ast/nodes.h"
-
-using namespace ast;
+#include "module.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
+using namespace ast;
+
 // TODO: Support multiple modules
-inline static std::vector<std::unique_ptr<top_level>> top_lvl_items;
+extern std::unique_ptr<modul> current_module;
 
 int yylex();
 extern "C" int yywrap();

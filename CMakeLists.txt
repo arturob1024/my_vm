@@ -18,7 +18,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 add_compile_options(
     -Wall -Wextra -Werror -Wconversion -Wmissing-declarations -Wsuggest-override
+    -g -Og -fsanitize=address
     )
+
+add_link_options(-fsanitize=address)
 
 # TODO: Add a common header for things both the compiler and VM need
 

@@ -1,14 +1,15 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include "module.h"
+#include "nodes_forward.h"
+
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace ast {
-
-enum class node_type {};
 
 class node {
   public:
@@ -24,18 +25,26 @@ class node {
 };
 
 // Intermediate nodes
-class top_level : public virtual node {};
-class statement : public virtual node {};
-using statement_ptr = std::unique_ptr<statement>;
+class top_level : public virtual node {
+  public:
+    virtual void build(modul &) const = 0;
+};
 
-class expression : public virtual node {};
-using expression_ptr = std::unique_ptr<expression>;
+class statement : public virtual node {
+  public:
+    virtual void build(modul &) const = 0;
+};
+
+class expression : public virtual node {
+  public:
+    virtual compiled_expr compile(modul &) const = 0;
+};
 
 // The following two types are helper types.
 // They have the following properites:
 // - No polymorphism
-// - No implicit copying
 // - Read-only APIs
+// Implicit copy will be permitted on a per-type basis, as some types may benefit from copying.
 class typed_id final {
   public:
     typed_id(std::string * id, std::string * type)
@@ -45,13 +54,7 @@ class typed_id final {
         delete type;
     }
 
-    typed_id(const typed_id &) = delete;
-    typed_id & operator=(const typed_id &) = delete;
-
-    typed_id(typed_id &&) noexcept = default;
-    typed_id & operator=(typed_id &&) noexcept = default;
-
-    ~typed_id() noexcept = default;
+    [[nodiscard]] std::pair<std::string, std::string> id_and_type() const { return {id, type}; }
 
   private:
     std::string id;
@@ -90,6 +93,8 @@ class const_decl final : public top_level, public statement {
         delete opt_type;
     }
 
+    void build(modul & mod) const final { mod.register_global(id, opt_type, *expr, true); }
+
   private:
     std::string id;
     std::optional<std::string> opt_type;
@@ -107,6 +112,8 @@ class function_decl final : public top_level {
         delete opt_ret_type;
     }
 
+    void build(modul & mod) const final { mod.register_function(id, params, opt_ret_type, *body); }
+
   private:
     std::string id;
     std::vector<typed_id> params;
@@ -121,6 +128,8 @@ class struct_decl final : public top_level {
         delete id;
     }
 
+    void build(modul & mod) const final { mod.register_struct(id, fields); }
+
   private:
     std::string id;
     std::vector<typed_id> fields;
@@ -129,34 +138,16 @@ class struct_decl final : public top_level {
 // expressions
 class binary_expr final : public expression {
   public:
-    enum class operation {
-        add,
-        sub,
-        mul,
-        div,
-        rem,
-        boolean_and,
-        boolean_or,
-        less_eq,
-        less,
-        greater_eq,
-        greater,
-        equal,
-        not_equal,
-        bit_and,
-        bit_or,
-        bit_xor,
-        bit_left,
-        bit_right
-    };
-    binary_expr(expression * lhs, operation op, expression * rhs)
+    binary_expr(expression * lhs, binary_operation op, expression * rhs)
         : lhs{lhs}
         , rhs{rhs}
         , op{op} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     expression_ptr lhs, rhs;
-    operation op;
+    binary_operation op;
 };
 class if_expr final : public expression {
   public:
@@ -165,17 +156,20 @@ class if_expr final : public expression {
         , true_case{true_case}
         , false_case{false_case} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     expression_ptr cond, true_case, false_case;
 };
 class literal final : public expression {
   public:
-    enum class type { string, integer, floating, character, boolean };
     literal(std::string * value, type typ)
         : value{std::move(*value)}
         , typ{typ} {
         delete value;
     }
+
+    compiled_expr compile(modul & mod) const final { return mod.compile_literal(value, typ); }
 
   private:
     std::string value;
@@ -189,6 +183,8 @@ class lvalue final : public expression {
         delete id;
     }
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     std::string id;
     std::unique_ptr<lvalue> parent;
@@ -199,51 +195,38 @@ class struct_init final : public expression {
         : type{std::move(*type)}
         , fields{std::move(fields)} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
     std::string type;
     std::vector<field_assignment> fields;
 };
 class unary_expr final : public expression {
   public:
-    enum class operation {
-        boolean_not,
-        negation,
-        bit_not,
-    };
-
-    unary_expr(operation op, expression * expr)
+    unary_expr(unary_operation op, expression * expr)
         : op{op}
         , expr{expr} {}
 
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
-    operation op;
+    unary_operation op;
     expression_ptr expr;
 };
 
 // statements
 class assignment final : public statement {
   public:
-    enum class operation {
-        assign,
-        add,
-        sub,
-        mul,
-        div,
-        remainder,
-        bit_and,
-        bit_or,
-        bit_left,
-        bit_right,
-        bit_xor,
-    };
-    assignment(lvalue * dest, operation op, expression * expr)
+    assignment(lvalue * dest, assignment_operation op, expression * expr)
         : dest{dest}
         , op{op}
         , expr{expr} {}
 
+    void build(modul &) const final {}
+
   private:
     std::unique_ptr<lvalue> dest;
-    operation op;
+    assignment_operation op;
     expression_ptr expr;
 };
 class block_stmt final : public statement {
@@ -251,6 +234,10 @@ class block_stmt final : public statement {
     block_stmt() = default;
     explicit block_stmt(std::vector<statement *> && stmts) {
         for (auto * stmt : stmts) this->stmts.emplace_back(stmt);
+    }
+
+    void build(modul & mod) const final {
+        for (auto & stmt : stmts) stmt->build(mod);
     }
 
   private:
@@ -264,6 +251,8 @@ class for_stmt final : public statement {
         , body{body}
         , condition{condition} {}
 
+    void build(modul &) const final {}
+
   private:
     statement_ptr initial, increment, body;
     expression_ptr condition;
@@ -276,7 +265,18 @@ class function_call final : public statement, public expression {
         delete id;
     }
 
+    void build(modul & mod) const final { mod.call_function(id, compile_args(mod)); }
+
+    compiled_expr compile(modul &) const final { return {}; }
+
   private:
+    std::vector<compiled_expr> compile_args(modul & mod) const {
+        std::vector<compiled_expr> compiled_args;
+        compiled_args.reserve(args.size());
+        for (auto & arg : args) compiled_args.push_back(arg->compile(mod));
+        return compiled_args;
+    }
+
     std::string id;
     std::vector<expression_ptr> args;
 };
@@ -286,6 +286,8 @@ class if_stmt final : public statement {
         : cond{cond}
         , then_block{then_block}
         , else_block{else_block} {}
+
+    void build(modul &) const final {}
 
   private:
     expression_ptr cond;
@@ -301,6 +303,8 @@ class let_stmt final : public statement {
         delete opt_type;
     }
 
+    void build(modul &) const final {}
+
   private:
     std::string id;
     std::optional<std::string> opt_type;
@@ -311,6 +315,8 @@ class return_stmt final : public statement {
     explicit return_stmt(expression * expr = nullptr)
         : expr{expr} {}
 
+    void build(modul &) const final {}
+
   private:
     expression_ptr expr;
 };
@@ -319,6 +325,8 @@ class while_stmt final : public statement {
     while_stmt(expression * cond, statement * body)
         : cond{cond}
         , body{body} {}
+
+    void build(modul &) const final {}
 
   private:
     expression_ptr cond;
