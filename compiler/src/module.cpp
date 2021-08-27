@@ -234,11 +234,15 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
         for (auto & instruction : func.instructions) {
             // fill in jal info
             if (instruction.op == opcode::jal) {
-                auto data = std::get<j_type>(instruction.data);
+                auto & data = std::get<j_type>(instruction.data);
                 data.imm = func_addrs.find(data.imm)->second;
             }
             segment_data.push_back(instruction);
         }
+        // TODO: Add this earlier in the pipeline
+        if (func.number == main_num)
+            segment_data.push_back(
+                instruction{opcode::syscall, s_type{zero, zero, zero, zero, zero}});
     }
 
     segments.push_back({text_start, static_cast<uint32_t>(segment_data.size() * 4) - text_start,
