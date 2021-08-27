@@ -29,6 +29,8 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
     current_function.clear();
 }
 
+void modul::call_function(std::string id) { std::cout << "Calling function " << id << std::endl; }
+
 void modul::register_struct(std::string id, const std::vector<ast::typed_id> &) {
     std::cout << "Registered a struct named " << id << std::endl;
 }
@@ -52,3 +54,4 @@ modul::function_details::function_details(const std::vector<ast::typed_id> & par
         }
     }
 }
+

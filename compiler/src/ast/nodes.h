@@ -300,7 +300,15 @@ class function_call final : public statement, public expression {
         delete id;
     }
 
-    void build(modul &) const final {}
+    void build(modul & mod) const final {
+        /*
+        for (auto & expr : args) {
+            // TODO: store the evaled expressions
+        }
+        */
+
+        mod.call_function(id);
+    }
 
   private:
     std::string id;

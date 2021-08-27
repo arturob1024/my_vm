@@ -33,6 +33,8 @@ class modul final {
 
     void register_struct(std::string id, const std::vector<ast::typed_id> & params);
 
+    void call_function(std::string id);
+
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;
 
