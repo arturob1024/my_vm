@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <variant>
 #include <vector>
@@ -16,9 +17,6 @@ using module_and_file = std::pair<std::unique_ptr<modul>, FILE *>;
 using id_and_type = std::pair<std::string, std::string>;
 
 struct compiled_expr {
-    [[nodiscard]] uint8_t register_number() const noexcept { return reg_num; }
-
-  private:
     uint8_t reg_num;
     std::string type;
 };
@@ -50,6 +48,8 @@ class modul final {
     void call_function(std::string id, std::vector<compiled_expr> args);
 
     // Expression compilation
+
+    compiled_expr compile_literal(const std::string & value, ast::type typ);
 
     compiled_expr compile_binary_op(ast::binary_operation, compiled_expr, compiled_expr) {
         return {};
@@ -117,6 +117,7 @@ class modul final {
 
     enum class opcode : uint8_t {
         r_type = 0,
+        lui = 1,
         ori = 5,
         jal = 20,
         jr = 21,
@@ -152,6 +153,7 @@ class modul final {
     };
 
     void add_instruction(opcode, instruction_data &&);
+    uint8_t alloc_reg();
 
     struct function_details {
         std::vector<instruction> instructions;
@@ -173,6 +175,11 @@ class modul final {
 
     std::map<std::string, function_details> functions;
     std::string current_function;
+
+    std::set<reg> used_registers;
+
+    static constexpr uint32_t data_segment_start = 0x4000;
+    std::vector<uint8_t> data_segment;
     uint32_t func_num = 0;
 };
 

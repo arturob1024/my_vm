@@ -169,7 +169,7 @@ class literal final : public expression {
         delete value;
     }
 
-    compiled_expr compile(modul &) const final { return {}; }
+    compiled_expr compile(modul & mod) const final { return mod.compile_literal(value, typ); }
 
   private:
     std::string value;

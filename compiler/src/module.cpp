@@ -31,6 +31,7 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
     current_function = std::move(id);
     body.build(*this);
     current_function.clear();
+    used_registers.clear();
 }
 
 void modul::call_function(std::string id, std::vector<compiled_expr> args) {
@@ -42,8 +43,7 @@ void modul::call_function(std::string id, std::vector<compiled_expr> args) {
     }
 
     uint8_t arg_reg = 3u;
-    for (auto & arg : args)
-        add_instruction(opcode::ori, i_type{arg_reg++, arg.register_number(), 0});
+    for (auto & arg : args) add_instruction(opcode::ori, i_type{arg_reg++, arg.reg_num, 0});
 
     add_instruction(opcode::jal,
                     j_type{31, [this, &id]() -> uint32_t {
@@ -56,6 +56,35 @@ void modul::call_function(std::string id, std::vector<compiled_expr> args) {
                                    exit(3);
                                }
                            }()});
+}
+
+compiled_expr modul::compile_literal(const std::string & value, ast::type typ) {
+    switch (typ) {
+    case ast::type::floating:
+        std::cout << "Cannot handle floating point at the moment." << std::endl;
+        exit(3);
+    case ast::type::string: {
+        // save to data segment
+        auto str_loc = data_segment_start + data_segment.size();
+        assert(str_loc < UINT32_MAX);
+        for (auto c : value) data_segment.push_back(c);
+        data_segment.push_back(0);
+        auto result = alloc_reg();
+        if (str_loc <= 0xFFFF) {
+            add_instruction(opcode::ori, i_type{result, zero, static_cast<uint16_t>(str_loc)});
+        } else {
+            add_instruction(opcode::ori,
+                            i_type{result, zero, static_cast<uint16_t>(str_loc & 0xFFFF)});
+            add_instruction(opcode::lui,
+                            i_type{result, result, static_cast<uint16_t>(str_loc >> 16)});
+        }
+        return {result, "string"};
+    }
+    default:
+        std::cout << "Tried to load " << value << ", which is not currently supported at this time."
+                  << std::endl;
+        exit(4);
+    }
 }
 
 void modul::register_struct(std::string id, const std::vector<ast::typed_id> &) {
@@ -76,6 +105,14 @@ void modul::add_instruction(opcode op, std::variant<r_type, i_type, j_type, s_ty
     assert(iter != functions.end());
 
     iter->second.instructions.emplace_back(op, std::move(data));
+}
+
+uint8_t modul::alloc_reg() {
+    auto candidate = static_cast<reg>(s0 + random() % (s19 - s0 + 1));
+    while (used_registers.count(candidate) != 0)
+        candidate = static_cast<reg>(s0 + random() % (s19 - s0 + 1));
+    used_registers.insert(candidate);
+    return candidate;
 }
 
 modul::function_details::function_details(const std::vector<id_and_type> & params,
