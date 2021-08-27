@@ -59,7 +59,7 @@ class modul final {
 
     struct function_details {
         std::vector<instruction> instructions;
-        std::map<std::string, std::string> parameters;
+        std::vector<ast::typed_id> parameters;
         std::string return_type;
 
         function_details(const std::vector<ast::typed_id> &, const std::optional<std::string> &);

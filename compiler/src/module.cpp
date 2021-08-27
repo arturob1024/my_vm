@@ -45,13 +45,6 @@ void modul::build() {
 
 modul::function_details::function_details(const std::vector<ast::typed_id> & params,
                                           const std::optional<std::string> & ret_type)
-    : return_type{ret_type.value_or("")} {
-    for (auto & param : params) {
-        if (auto [iter, previously_seen] = parameters.insert(param.id_and_type());
-            previously_seen) {
-            std::cout << "Error: parameter seen twice: " << iter->first << std::endl;
-            exit(1);
-        }
-    }
-}
+    : parameters{params}
+    , return_type{ret_type.value_or("")} {}
 

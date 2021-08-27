@@ -42,8 +42,8 @@ class expression : public virtual node {
 // The following two types are helper types.
 // They have the following properites:
 // - No polymorphism
-// - No implicit copying
 // - Read-only APIs
+// Implicit copy will be permitted on a per-type basis, as some types may benefit from copying.
 class typed_id final {
   public:
     typed_id(std::string * id, std::string * type)
@@ -52,14 +52,6 @@ class typed_id final {
         delete id;
         delete type;
     }
-
-    typed_id(const typed_id &) = delete;
-    typed_id & operator=(const typed_id &) = delete;
-
-    typed_id(typed_id &&) noexcept = default;
-    typed_id & operator=(typed_id &&) noexcept = default;
-
-    ~typed_id() noexcept = default;
 
     [[nodiscard]] std::pair<std::string, std::string> id_and_type() const { return {id, type}; }
 
