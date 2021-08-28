@@ -2,6 +2,7 @@
 #define MODULE_H
 
 #include "ast/nodes_forward.h"
+#include "module_forward.h"
 
 #include <cstdio>
 #include <map>
@@ -11,12 +12,6 @@
 #include <string>
 #include <variant>
 #include <vector>
-
-class modul;
-using module_and_file = std::pair<std::unique_ptr<modul>, FILE *>;
-using id_and_type = std::pair<std::string, std::string>;
-
-struct compiled_expr;
 
 class modul final {
 
@@ -97,15 +92,7 @@ class modul final {
     static_assert(reg::lr == 31);
 
   private:
-    explicit modul(std::string filename)
-        : filename{std::move(filename)} {
-        functions.emplace(
-            "print", function_details{
-                         std::vector{instruction{opcode::ori, i_type{temp, zero, 3}},
-                                     instruction{opcode::syscall, s_type{temp, a0, zero, zero, 1}},
-                                     instruction{opcode::jr, j_type{lr, 0}}},
-                         std::vector{id_and_type{"input", "string"}}, "", func_num++});
-    }
+    explicit modul(std::string filename);
 
     std::string filename;
     std::vector<ast::top_level_ptr> top_lvl_items;

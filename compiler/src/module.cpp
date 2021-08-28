@@ -100,6 +100,16 @@ compiled_expr modul::compile_binary_op(ast::binary_operation, compiled_expr, com
     return {};
 }
 
+modul::modul(std::string filename)
+    : filename{std::move(filename)} {
+    functions.emplace(
+        "print",
+        function_details{std::vector{instruction{opcode::ori, i_type{temp, zero, 3}},
+                                     instruction{opcode::syscall, s_type{temp, a0, zero, zero, 1}},
+                                     instruction{opcode::jr, j_type{lr, 0}}},
+                         std::vector{id_and_type{"input", "string"}}, "", func_num++});
+}
+
 void modul::register_struct(std::string id, const std::vector<ast::typed_id> &) {
     std::cout << "Registered a struct named " << id << std::endl;
 }

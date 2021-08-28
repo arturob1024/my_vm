@@ -42,6 +42,7 @@ add_custom_command(
 set(sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/module.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ast/nodes.cpp
     )
 
 add_executable(arturo_c
