@@ -83,6 +83,26 @@ class field_assignment final {
 };
 
 // declarations
+class modul final : public top_level {
+  public:
+    static module_and_file open_module(const char * path);
+    static module_and_file open_stdin();
+
+    void build(ir::modul &) const final;
+
+    void add_top_level_item(top_level *);
+    [[nodiscard]] size_t top_level_item_count() const noexcept { return items.size(); }
+
+    std::string filename() const { return file_name; }
+
+  private:
+    explicit modul(std::string filename)
+        : file_name{std::move(filename)} {}
+
+    std::vector<top_level_ptr> items;
+    std::string file_name;
+};
+
 class const_decl final : public top_level, public statement {
   public:
     const_decl(std::string * id, std::string * opt_type, expression * expr)

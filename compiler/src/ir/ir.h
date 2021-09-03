@@ -2,8 +2,8 @@
 #define IR_H
 
 #include "ast/nodes_forward.h"
+#include "bytecode/module_forward.h"
 #include "ir_forward.h"
-#include "module_forward.h"
 
 #include <map>
 #include <optional>
@@ -61,15 +61,15 @@ struct modul {
   private:
     struct function_details {
         std::vector<instruction> instructions;
-        std::vector<id_and_type> parameters;
+        std::vector<bytecode::id_and_type> parameters;
         std::string return_type;
         uint32_t number;
 
-        function_details(const std::vector<id_and_type> &, const std::optional<std::string> &,
-                         uint32_t);
+        function_details(const std::vector<bytecode::id_and_type> &,
+                         const std::optional<std::string> &, uint32_t);
 
         function_details(std::vector<instruction> && instructions,
-                         std::vector<id_and_type> && params, std::string && ret_type,
+                         std::vector<bytecode::id_and_type> && params, std::string && ret_type,
                          uint32_t number)
             : instructions{std::move(instructions)}
             , parameters{std::move(params)}
@@ -85,6 +85,7 @@ struct modul {
     std::string current_func_name;
 
     std::string filename;
+    std::vector<ast::top_level_ptr> top_lvl_items;
     int temp_num = 0;
     uint32_t func_num = 0;
 };

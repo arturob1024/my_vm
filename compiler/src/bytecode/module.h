@@ -13,12 +13,11 @@
 #include <variant>
 #include <vector>
 
+namespace bytecode {
+
 class modul final {
 
   public:
-    static module_and_file open_module(const char * path);
-    static module_and_file open_stdin();
-
     void build();
     void write();
 
@@ -186,5 +185,6 @@ struct compiled_expr {
     modul::reg reg_num;
     std::string type;
 };
+} // namespace bytecode
 
 #endif

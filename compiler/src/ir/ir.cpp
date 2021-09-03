@@ -15,7 +15,7 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
 
     assert(functions.find(id) == functions.end());
 
-    std::vector<id_and_type> parameters;
+    std::vector<bytecode::id_and_type> parameters;
     for (auto & param : params) parameters.push_back(param.id_and_type());
     functions.insert_or_assign(
         id, function_details{{}, std::move(parameters), type.value_or(""), func_num++});
@@ -125,7 +125,7 @@ operand modul::compile_binary_op(ast::binary_operation op, operand lhs, operand 
     return result;
 }
 
-modul::function_details::function_details(const std::vector<id_and_type> & parameters,
+modul::function_details::function_details(const std::vector<bytecode::id_and_type> & parameters,
                                           const std::optional<std::string> & opt_ret_type,
                                           uint32_t number)
     : parameters{parameters}

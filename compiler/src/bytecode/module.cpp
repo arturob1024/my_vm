@@ -9,14 +9,7 @@
 #include <iostream>
 #include <numeric>
 
-module_and_file modul::open_module(const char * path) {
-    return {std::make_unique<modul>(modul{path}), fopen(path, "r")};
-}
-
-module_and_file modul::open_stdin() { return {std::make_unique<modul>(modul{"stdin"}), stdin}; }
-
-void modul::add_top_level_item(ast::top_level * top_lvl) { top_lvl_items.emplace_back(top_lvl); }
-
+namespace bytecode {
 void modul::register_global(std::string id, const std::optional<std::string> &, ast::expression &,
                             bool constant) {
     std::cout << "Registered a " << (constant ? "constant" : "mutable") << " global named " << id
@@ -315,3 +308,4 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
     }
     return result;
 }
+} // namespace bytecode

@@ -2,7 +2,6 @@
 #define FLEX_BISON_H
 
 #include "ast/nodes.h"
-#include "module.h"
 
 #include <iostream>
 #include <string>

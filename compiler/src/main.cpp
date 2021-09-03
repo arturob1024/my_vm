@@ -1,13 +1,14 @@
+#include "bytecode/module.h"
 #include "compiler/tokens.hpp"
 #include "flex_bison.h"
-#include "module.h"
+#include "ir/ir.h"
 #include "parser.h"
 
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 
-std::unique_ptr<modul> current_module;
+std::unique_ptr<ast::modul> current_module;
 
 int main(const int arg_count, const char * const * const args) {
 
@@ -48,7 +49,7 @@ int main(const int arg_count, const char * const * const args) {
         exit(0);
     }
 
-    current_module->build();
+    // current_module->build();
 
-    current_module->write();
+    // current_module->write();
 }
