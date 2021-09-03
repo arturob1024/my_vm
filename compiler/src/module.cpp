@@ -24,7 +24,7 @@ void modul::register_global(std::string id, const std::optional<std::string> &, 
 }
 
 void modul::register_function(std::string id, const std::vector<ast::typed_id> & params,
-                              const std::optional<std::string> & ret_type, ast::statement & body) {
+                              const std::optional<std::string> & ret_type, ast::statement &) {
     std::cout << "Registered a function named " << id << std::endl;
 
     std::vector<id_and_type> typed_ids;
@@ -32,7 +32,7 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
 
     functions.emplace(id, function_details{std::move(typed_ids), ret_type, func_num++});
     current_function = std::move(id);
-    body.build(*this);
+    // body.build(*this);
     current_function.clear();
     used_registers.clear();
 }
@@ -118,7 +118,7 @@ void modul::build() {
 
     for (auto & top_lvl : top_lvl_items) {
         assert(top_lvl != nullptr);
-        top_lvl->build(*this);
+        // top_lvl->build(*this);
     }
 }
 

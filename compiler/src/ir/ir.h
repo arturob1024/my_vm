@@ -5,6 +5,7 @@
 #include "ir_forward.h"
 #include "module_forward.h"
 
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -22,6 +23,11 @@ struct instruction {
     // TODO: shared_ptr?
     std::vector<operand> args;
     std::optional<operand> result;
+
+    instruction(operation op, std::vector<operand> args, std::optional<operand> result)
+        : op{op}
+        , args{std::move(args)}
+        , result{std::move(result)} {}
 };
 
 struct modul {
@@ -72,9 +78,11 @@ struct modul {
     };
 
     explicit modul(std::string filename);
+    [[nodiscard]] function_details & current_function();
+    [[nodiscard]] operand temp_operand(std::string);
 
     std::map<std::string, function_details> functions;
-    std::string current_function;
+    std::string current_func_name;
 
     std::string filename;
     int temp_num = 0;

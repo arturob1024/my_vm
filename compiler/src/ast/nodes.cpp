@@ -1,8 +1,11 @@
 #include "nodes.h"
 
-#include "module.h"
+#include "ir/ir.h"
 
 namespace ast {
+
+using ir::modul, ir::operand;
+
 // Top level declarations
 
 void const_decl::build(modul & mod) const { mod.register_global(id, opt_type, *expr, true); }
@@ -15,17 +18,17 @@ void struct_decl::build(modul & mod) const { mod.register_struct(id, fields); }
 
 // Expressions
 
-compiled_expr binary_expr::compile(modul &) const { return {}; }
+operand binary_expr::compile(modul &) const { return {}; }
 
-compiled_expr if_expr::compile(modul &) const { return {}; }
+operand if_expr::compile(modul &) const { return {}; }
 
-compiled_expr literal::compile(modul & mod) const { return mod.compile_literal(value, typ); }
+operand literal::compile(modul & mod) const { return mod.compile_literal(value, typ); }
 
-compiled_expr lvalue::compile(modul &) const { return {}; }
+operand lvalue::compile(modul &) const { return {}; }
 
-compiled_expr struct_init::compile(modul &) const { return {}; }
+operand struct_init::compile(modul &) const { return {}; }
 
-compiled_expr unary_expr::compile(modul &) const { return {}; }
+operand unary_expr::compile(modul &) const { return {}; }
 
 // Statements
 
@@ -39,10 +42,10 @@ void for_stmt::build(modul &) const {}
 
 void function_call::build(modul & mod) const { mod.call_function(id, compile_args(mod)); }
 
-compiled_expr function_call::compile(modul &) const { return {}; }
+operand function_call::compile(modul &) const { return {}; }
 
-std::vector<compiled_expr> function_call::compile_args(modul & mod) const {
-    std::vector<compiled_expr> compiled_args;
+std::vector<operand> function_call::compile_args(modul & mod) const {
+    std::vector<operand> compiled_args;
     compiled_args.reserve(args.size());
     for (auto & arg : args) compiled_args.push_back(arg->compile(mod));
     return compiled_args;
