@@ -53,8 +53,7 @@ struct modul {
 
     operand compile_binary_op(ast::binary_operation, operand, operand);
 
-    explicit modul(std::string filename)
-        : filename{std::move(filename)} {}
+    explicit modul(std::string filename);
 
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;

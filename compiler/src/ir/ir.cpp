@@ -21,7 +21,7 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
         id, function_details{{}, std::move(parameters), type.value_or(""), func_num++});
     current_func_name = id;
     (void)body;
-    // body.build(*this);
+    body.build(*this);
     current_func_name.clear();
 }
 
@@ -125,6 +125,23 @@ operand modul::compile_binary_op(ast::binary_operation op, operand lhs, operand 
     return result;
 }
 
+modul::modul(std::string filename)
+    : filename{std::move(filename)} {
+    functions.emplace("print",
+                      function_details{std::vector{instruction{operation::syscall,
+                                                               {
+                                                                   operand{"3", "integer"},
+                                                                   operand{"input", "string"},
+                                                                   operand{"0", "integer"},
+                                                                   operand{"0", "integer"},
+                                                                   operand{"1", "integer"},
+                                                               },
+                                                               {}},
+                                                   instruction{operation::ret, {}, {}}},
+                                       std::vector{bytecode::id_and_type{"input", "string"}}, "",
+                                       func_num++});
+}
+
 modul::function_details::function_details(const std::vector<bytecode::id_and_type> & parameters,
                                           const std::optional<std::string> & opt_ret_type,
                                           uint32_t number)
@@ -163,6 +180,12 @@ std::ostream & operator<<(std::ostream & lhs, const ir::instruction & rhs) {
     if (rhs.result.has_value())
         lhs << rhs.result.value().type << ' ' << rhs.result.value().name << " = ";
     switch (rhs.op) {
+    case operation::syscall:
+        lhs << "syscall ";
+        break;
+    case operation::ret:
+        lhs << "ret ";
+        break;
     case operation::call:
         lhs << "call ";
         break;

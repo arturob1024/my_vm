@@ -5,6 +5,8 @@ namespace ir {
 
 enum class operation {
     call,
+    ret,
+    syscall,
     add,
     sub,
     mul,
