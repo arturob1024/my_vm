@@ -7,6 +7,37 @@
 #include <iostream>
 
 namespace ir {
+
+type_ptr string_type::instance = std::make_shared<string_type>();
+type_ptr integer_type::instance = std::make_shared<integer_type>();
+type_ptr floating_type::instance = std::make_shared<floating_type>();
+type_ptr boolean_type::instance = std::make_shared<boolean_type>();
+type_ptr character_type::instance = std::make_shared<character_type>();
+type_ptr unit_type::instance = std::make_shared<unit_type>();
+
+type_ptr ast_to_ir_type(const std::string & ast) {
+
+    if (ast == "string") {
+        return string_type::instance;
+    } else if (ast.empty()) {
+        return unit_type::instance;
+    }
+    std::cout << "Unimplemented ir type for '" << ast << '\'' << std::endl;
+    assert(false);
+}
+
+void string_type::print(std::ostream & lhs) const { lhs << "string"; }
+void integer_type::print(std::ostream & lhs) const { lhs << "integer"; }
+void floating_type::print(std::ostream & lhs) const { lhs << "floating"; }
+void character_type::print(std::ostream & lhs) const { lhs << "character"; }
+void boolean_type::print(std::ostream & lhs) const { lhs << "boolean"; }
+void unit_type::print(std::ostream & lhs) const { lhs << "unit"; }
+void func_type::print(std::ostream & lhs) const {
+    lhs << '(';
+    for (auto & typ : arg_types) lhs << *typ << ", ";
+    lhs << ") " << *ret_type;
+}
+
 // Top level item compilation
 
 void modul::register_global(std::string, std::optional<std::string>, ast::expression &, bool) {}
@@ -15,12 +46,14 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
 
     assert(functions.find(id) == functions.end());
 
-    std::vector<bytecode::id_and_type> parameters;
-    for (auto & param : params) parameters.push_back(param.id_and_type());
+    std::vector<id_and_type> parameters;
+    for (auto & param : params) {
+        auto [id, type] = param.id_and_type();
+        parameters.push_back(std::make_pair(id, ast_to_ir_type(type)));
+    }
     functions.insert_or_assign(
         id, function_details{{}, std::move(parameters), type.value_or(""), func_num++});
     current_func_name = id;
-    (void)body;
     body.build(*this);
     current_func_name.clear();
 }
@@ -31,9 +64,10 @@ void modul::register_struct(std::string, const std::vector<ast::typed_id> &) {}
 
 void modul::call_function(std::string id, std::vector<operand> args) {
 
-    assert(functions.find(id) != functions.end());
+    auto iter = functions.find(id);
+    assert(iter != functions.end());
 
-    args.insert(args.begin(), {id, "function"});
+    args.insert(args.begin(), {id, iter->second.func_type()});
     current_function().instructions.emplace_back(operation::call, args, std::nullopt);
 }
 
@@ -42,15 +76,15 @@ void modul::call_function(std::string id, std::vector<operand> args) {
 operand modul::compile_literal(const std::string & value, ast::type typ) {
     switch (typ) {
     case ast::type::string:
-        return {value, "string"};
+        return {value, string_type::instance};
     case ast::type::integer:
-        return {value, "integer"};
+        return {value, integer_type::instance};
     case ast::type::floating:
-        return {value, "floating"};
+        return {value, floating_type::instance};
     case ast::type::character:
-        return {value, "character"};
+        return {value, character_type::instance};
     case ast::type::boolean:
-        return {value, "boolean"};
+        return {value, boolean_type::instance};
     default:
         std::cout << "Unsupported ast type: " << (int)typ << std::endl;
         exit(2);
@@ -119,35 +153,41 @@ operand modul::compile_binary_op(ast::binary_operation op, operand lhs, operand 
         exit(2);
     }
 
-    assert(lhs.type == rhs.type);
-    auto result = temp_operand(lhs.type);
+    assert(lhs.typ == rhs.typ);
+    auto result = temp_operand(lhs.typ);
     current_function().instructions.push_back({ir_op, {lhs, rhs}, result});
     return result;
 }
 
 modul::modul(std::string filename)
     : filename{std::move(filename)} {
-    functions.emplace("print",
-                      function_details{std::vector{instruction{operation::syscall,
-                                                               {
-                                                                   operand{"3", "integer"},
-                                                                   operand{"input", "string"},
-                                                                   operand{"0", "integer"},
-                                                                   operand{"0", "integer"},
-                                                                   operand{"1", "integer"},
-                                                               },
-                                                               {}},
-                                                   instruction{operation::ret, {}, {}}},
-                                       std::vector{bytecode::id_and_type{"input", "string"}}, "",
-                                       func_num++});
+    functions.emplace(
+        "print",
+        function_details{std::vector{instruction{operation::syscall,
+                                                 {
+                                                     operand{"3", integer_type::instance},
+                                                     operand{"input", string_type::instance},
+                                                     operand{"0", integer_type::instance},
+                                                     operand{"0", integer_type::instance},
+                                                     operand{"1", integer_type::instance},
+                                                 },
+                                                 {}},
+                                     instruction{operation::ret, {}, {}}},
+                         std::vector{id_and_type{"input", string_type::instance}}, "", func_num++});
 }
 
-modul::function_details::function_details(const std::vector<bytecode::id_and_type> & parameters,
+modul::function_details::function_details(const std::vector<id_and_type> & parameters,
                                           const std::optional<std::string> & opt_ret_type,
                                           uint32_t number)
     : parameters{parameters}
     , return_type{opt_ret_type.value_or("")}
     , number{number} {}
+
+type_ptr modul::function_details::generate_type() const {
+    std::vector<type_ptr> args;
+    for (auto & param : parameters) args.push_back(param.second);
+    return std::make_shared<ir::func_type>(std::move(args), ast_to_ir_type(return_type));
+}
 
 modul::function_details & modul::current_function() {
     auto iter = functions.find(current_func_name);
@@ -155,7 +195,7 @@ modul::function_details & modul::current_function() {
     return iter->second;
 }
 
-operand modul::temp_operand(std::string type) {
+operand modul::temp_operand(type_ptr type) {
     return {"temp_" + std::to_string(temp_num++), std::move(type)};
 }
 
@@ -166,7 +206,7 @@ std::ostream & operator<<(std::ostream & lhs, const ir::modul & rhs) {
         lhs << "Function " << iter.first << '\n';
         lhs << "Parameters: (";
         for (auto & param : iter.second.parameters)
-            lhs << param.second << ' ' << param.first << ", ";
+            lhs << *param.second << ' ' << param.first << ", ";
         lhs << ")\n";
         lhs << "Returns " << iter.second.return_type << '\n';
         for (auto & inst : iter.second.instructions) lhs << inst << '\n';
@@ -178,7 +218,7 @@ std::ostream & operator<<(std::ostream & lhs, const ir::modul & rhs) {
 
 std::ostream & operator<<(std::ostream & lhs, const ir::instruction & rhs) {
     if (rhs.result.has_value())
-        lhs << rhs.result.value().type << ' ' << rhs.result.value().name << " = ";
+        lhs << *rhs.result.value().typ << ' ' << rhs.result.value().name << " = ";
     switch (rhs.op) {
     case operation::syscall:
         lhs << "syscall ";
@@ -256,7 +296,7 @@ std::ostream & operator<<(std::ostream & lhs, const ir::instruction & rhs) {
         lhs << "bit_not ";
         break;
     }
-    for (auto & arg : rhs.args) lhs << arg.type << ' ' << arg.name << ", ";
+    for (auto & arg : rhs.args) lhs << *arg.typ << ' ' << arg.name << ", ";
     return lhs;
 }
 

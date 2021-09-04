@@ -4,6 +4,7 @@
 #include "ast/nodes_forward.h"
 #include "bytecode/module_forward.h"
 #include "ir_forward.h"
+#include "type.h"
 
 #include <iosfwd>
 #include <map>
@@ -13,10 +14,11 @@
 
 namespace ir {
 
+using id_and_type = std::pair<std::string, type_ptr>;
+
 struct operand {
     std::string name;
-    // TODO: Use a type type
-    std::string type;
+    type_ptr typ;
 };
 
 struct instruction {
@@ -66,24 +68,35 @@ struct modul {
   private:
     struct function_details {
         std::vector<instruction> instructions;
-        std::vector<bytecode::id_and_type> parameters;
+        std::vector<id_and_type> parameters;
         std::string return_type;
         uint32_t number;
 
-        function_details(const std::vector<bytecode::id_and_type> &,
-                         const std::optional<std::string> &, uint32_t);
+        function_details(const std::vector<id_and_type> &, const std::optional<std::string> &,
+                         uint32_t);
 
         function_details(std::vector<instruction> && instructions,
-                         std::vector<bytecode::id_and_type> && params, std::string && ret_type,
+                         std::vector<id_and_type> && params, std::string && ret_type,
                          uint32_t number)
             : instructions{std::move(instructions)}
             , parameters{std::move(params)}
             , return_type{std::move(ret_type)}
             , number{number} {}
+
+        type_ptr func_type() const {
+            if (typ == nullptr) typ = generate_type();
+            // TODO: Assert not null
+            return typ;
+        }
+
+      private:
+        type_ptr generate_type() const;
+
+        mutable type_ptr typ;
     };
 
     [[nodiscard]] function_details & current_function();
-    [[nodiscard]] operand temp_operand(std::string);
+    [[nodiscard]] operand temp_operand(type_ptr);
 
     std::map<std::string, function_details> functions;
     std::string current_func_name;
