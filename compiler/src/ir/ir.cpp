@@ -142,4 +142,99 @@ operand modul::temp_operand(std::string type) {
     return {"temp_" + std::to_string(temp_num++), std::move(type)};
 }
 
+std::ostream & operator<<(std::ostream & lhs, const ir::modul & rhs) {
+    lhs << "File: " << rhs.filename << std::endl;
+
+    for (auto & iter : rhs.functions) {
+        lhs << "Function " << iter.first << '\n';
+        lhs << "Parameters: (";
+        for (auto & param : iter.second.parameters)
+            lhs << param.second << ' ' << param.first << ", ";
+        lhs << ")\n";
+        lhs << "Returns " << iter.second.return_type << '\n';
+        for (auto & inst : iter.second.instructions) lhs << inst << '\n';
+        lhs << std::endl;
+    }
+
+    return lhs;
+}
+
+std::ostream & operator<<(std::ostream & lhs, const ir::instruction & rhs) {
+    if (rhs.result.has_value())
+        lhs << rhs.result.value().type << ' ' << rhs.result.value().name << " = ";
+    switch (rhs.op) {
+    case operation::call:
+        lhs << "call ";
+        break;
+    case operation::add:
+        lhs << "add ";
+        break;
+    case operation::sub:
+        lhs << "sub ";
+        break;
+    case operation::mul:
+        lhs << "mul ";
+        break;
+    case operation::div:
+        lhs << "div ";
+        break;
+    case operation::rem:
+        lhs << "rem ";
+        break;
+    case operation::boolean_and:
+        lhs << "boolean_and ";
+        break;
+    case operation::boolean_or:
+        lhs << "boolean_or ";
+        break;
+    case operation::less_eq:
+        lhs << "less_eq ";
+        break;
+    case operation::less:
+        lhs << "less ";
+        break;
+    case operation::greater_eq:
+        lhs << "greater_eq ";
+        break;
+    case operation::greater:
+        lhs << "greater ";
+        break;
+    case operation::equal:
+        lhs << "equal ";
+        break;
+    case operation::not_equal:
+        lhs << "not_equal ";
+        break;
+    case operation::bit_and:
+        lhs << "bit_and ";
+        break;
+    case operation::bit_or:
+        lhs << "bit_or ";
+        break;
+    case operation::bit_xor:
+        lhs << "bit_xor ";
+        break;
+    case operation::bit_left:
+        lhs << "bit_left ";
+        break;
+    case operation::bit_right:
+        lhs << "bit_right ";
+        break;
+    case operation::assign:
+        lhs << "assign ";
+        break;
+    case operation::boolean_not:
+        lhs << "boolean_not ";
+        break;
+    case operation::negation:
+        lhs << "negation ";
+        break;
+    case operation::bit_not:
+        lhs << "bit_not ";
+        break;
+    }
+    for (auto & arg : rhs.args) lhs << arg.type << ' ' << arg.name << ", ";
+    return lhs;
+}
+
 } // namespace ir

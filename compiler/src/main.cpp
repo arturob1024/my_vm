@@ -49,7 +49,8 @@ int main(const int arg_count, const char * const * const args) {
         exit(0);
     }
 
-    // current_module->build();
+    ir::modul ir_modul{current_module->filename()};
+    current_module->build(ir_modul);
 
-    // current_module->write();
+    std::cout << ir_modul << std::endl;
 }

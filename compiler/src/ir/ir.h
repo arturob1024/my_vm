@@ -5,6 +5,7 @@
 #include "bytecode/module_forward.h"
 #include "ir_forward.h"
 
+#include <iosfwd>
 #include <map>
 #include <optional>
 #include <string>
@@ -28,6 +29,8 @@ struct instruction {
         : op{op}
         , args{std::move(args)}
         , result{std::move(result)} {}
+
+    friend std::ostream & operator<<(std::ostream &, const instruction &);
 };
 
 struct modul {
@@ -49,6 +52,9 @@ struct modul {
     operand compile_literal(const std::string & value, ast::type typ);
 
     operand compile_binary_op(ast::binary_operation, operand, operand);
+
+    explicit modul(std::string filename)
+        : filename{std::move(filename)} {}
 
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;
@@ -77,7 +83,6 @@ struct modul {
             , number{number} {}
     };
 
-    explicit modul(std::string filename);
     [[nodiscard]] function_details & current_function();
     [[nodiscard]] operand temp_operand(std::string);
 
@@ -85,9 +90,10 @@ struct modul {
     std::string current_func_name;
 
     std::string filename;
-    std::vector<ast::top_level_ptr> top_lvl_items;
     int temp_num = 0;
     uint32_t func_num = 0;
+
+    friend std::ostream & operator<<(std::ostream &, const ir::modul &);
 };
 
 } // namespace ir
