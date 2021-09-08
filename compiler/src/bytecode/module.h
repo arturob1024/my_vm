@@ -2,6 +2,7 @@
 #define MODULE_H
 
 #include "ast/nodes_forward.h"
+#include "ir/ir_forward.h"
 #include "module_forward.h"
 
 #include <cstdio>
@@ -21,30 +22,7 @@ class modul final {
     void build();
     void write();
 
-    void add_top_level_item(ast::top_level * top_lvl);
-
-    [[nodiscard]] size_t top_level_item_count() const noexcept { return top_lvl_items.size(); }
-
-    // Top level item compilation
-
-    void register_global(std::string id, const std::optional<std::string> & type,
-                         ast::expression & value, bool constant);
-
-    void register_function(std::string id, const std::vector<ast::typed_id> & params,
-                           const std::optional<std::string> & type, ast::statement & body);
-
-    void register_struct(std::string id, const std::vector<ast::typed_id> & params);
-
-    // Statment compilation
-
-    void call_function(std::string id, std::vector<compiled_expr> args);
-
-    // Expression compilation
-
-    compiled_expr compile_literal(const std::string & value, ast::type typ);
-
-    compiled_expr compile_binary_op(ast::binary_operation, compiled_expr, compiled_expr);
-
+    explicit modul(std::string filename);
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;
 
@@ -91,10 +69,7 @@ class modul final {
     static_assert(reg::lr == 31);
 
   private:
-    explicit modul(std::string filename);
-
     std::string filename;
-    std::vector<ast::top_level_ptr> top_lvl_items;
 
     enum class func_num : uint8_t {};
 
@@ -153,38 +128,25 @@ class modul final {
 
     struct function_details {
         std::vector<instruction> instructions;
-        std::vector<id_and_type> parameters;
-        std::string return_type;
+        std::map<ir::operand, reg> allocated_registers;
         uint32_t number;
-
-        function_details(const std::vector<id_and_type> &, const std::optional<std::string> &,
-                         uint32_t);
-
-        function_details(std::vector<instruction> && instructions,
-                         std::vector<id_and_type> && params, std::string && ret_type,
-                         uint32_t number)
-            : instructions{std::move(instructions)}
-            , parameters{std::move(params)}
-            , return_type{std::move(ret_type)}
-            , number{number} {}
     };
 
     std::map<std::string, function_details> functions;
     std::string current_function;
 
-    std::set<reg> used_registers;
+    [[nodiscard]] const function_details & cur_func() const;
+
+    [[nodiscard]] std::set<reg> used_registers() const;
 
     static constexpr uint32_t vm_text_start = 0x5000;
     static constexpr uint32_t vm_data_start = 0x4000;
     static constexpr uint32_t sp_start = 0x3000'0000;
     std::vector<uint8_t> data_segment;
+
     uint32_t func_num = 0;
 };
 
-struct compiled_expr {
-    modul::reg reg_num;
-    std::string type;
-};
 } // namespace bytecode
 
 #endif
