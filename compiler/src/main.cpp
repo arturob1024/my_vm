@@ -58,11 +58,9 @@ int main(const int arg_count, const char * const * const args) {
 
     auto output_filename = current_module->filename();
 
-    {
-        // replace everything after the first dot with .bin
-        output_filename.erase(output_filename.rfind('.'));
-        output_filename += ".bin";
-    }
+    // Replace everything after the first dot with .bin
+    output_filename.erase(output_filename.rfind('.'));
+    output_filename += ".bin";
 
     byte_modul.write(output_filename);
 }
