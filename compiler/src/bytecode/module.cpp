@@ -56,12 +56,33 @@ modul::reg modul::register_for(const ir::operand & operand) {
     if (operand.typ == ir::integer_type::instance) {
         assert(isdigit(operand.name.front()));
         auto value = std::stoi(operand.name);
+        if (value == 0) return reg::zero;
         assert(value < UINT16_MAX);
         add_instruction(opcode::ori, i_type{reg::temp, reg::zero, static_cast<uint16_t>(value)});
         return reg::temp;
     }
 
     std::cout << "Could not make bytecode for type " << *operand.typ << std::endl;
+    exit(5);
+}
+
+uint32_t modul::value_for(const ir::operand & operand) {
+
+    if (operand.typ == ir::string_type::instance) {
+        // TODO: This only works for raw strings
+        auto addr = add_string_to_data(operand.name);
+        assert(addr <= UINT16_MAX);
+        return addr;
+    }
+
+    if (operand.typ == ir::integer_type::instance) {
+        assert(isdigit(operand.name.front()));
+        auto value = std::stoi(operand.name);
+        assert(value < UINT16_MAX);
+        return value;
+    }
+
+    std::cout << "Could not make value for type " << *operand.typ << std::endl;
     exit(5);
 }
 
@@ -105,12 +126,14 @@ void modul::compile_to_ir(const ir::instruction & inst) {
     } break;
     case ir::operation::syscall: {
         assert(inst.args.size() == 5);
+        auto func = value_for(inst.args[4]);
+        assert(func < (1u << 7));
         add_instruction(opcode::syscall, s_type{
-                                             .rd = register_for(inst.args[1]),
-                                             .rs1 = register_for(inst.args[2]),
-                                             .rs2 = register_for(inst.args[3]),
-                                             .rs3 = register_for(inst.args[4]),
-                                             .func = register_for(inst.args[0]),
+                                             .rd = register_for(inst.args[0]),
+                                             .rs1 = register_for(inst.args[1]),
+                                             .rs2 = register_for(inst.args[2]),
+                                             .rs3 = register_for(inst.args[3]),
+                                             .func = static_cast<uint8_t>(func),
                                          });
     } break;
     case ir::operation::ret: {

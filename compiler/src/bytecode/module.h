@@ -143,6 +143,7 @@ class modul final {
     [[nodiscard]] std::set<reg> used_registers() const;
 
     [[nodiscard]] reg register_for(const ir::operand &);
+    [[nodiscard]] uint32_t value_for(const ir::operand &);
     [[nodiscard]] uint32_t add_string_to_data(const std::string &);
 
     static constexpr uint32_t vm_text_start = 0x5000;
