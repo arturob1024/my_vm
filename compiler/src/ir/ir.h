@@ -65,7 +65,6 @@ struct modul {
 
     ~modul() noexcept = default;
 
-  private:
     struct function_details {
         std::vector<instruction> instructions;
         std::vector<id_and_type> parameters;
@@ -95,6 +94,9 @@ struct modul {
         mutable type_ptr typ;
     };
 
+    const std::map<std::string, function_details> & compiled_functions() const { return functions; }
+
+  private:
     [[nodiscard]] function_details & current_function();
     [[nodiscard]] operand temp_operand(type_ptr);
 

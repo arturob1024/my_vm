@@ -15,7 +15,12 @@ namespace bytecode {
 modul::modul(ir::modul && mod)
     : ir_modul{std::make_unique<ir::modul>(std::move(mod))} {}
 
-void modul::build() {}
+void modul::build() {
+    for (auto & iter : ir_modul->compiled_functions()) {
+        std::cout << "Building " << iter.first << '\n';
+        functions.emplace(iter.first, function_details{{}, {}, iter.second.number});
+    }
+}
 
 void modul::add_instruction(opcode op, std::variant<r_type, i_type, j_type, s_type> && data) {
 
@@ -34,6 +39,8 @@ modul::reg modul::alloc_reg() {
 }
 
 void modul::write(const std::string & output_name) {
+    if (functions.empty()) build();
+
     auto * output = fopen(output_name.c_str(), "w");
 
     static constexpr uint8_t magic_bytes[]{0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A,
