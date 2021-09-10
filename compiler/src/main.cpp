@@ -1,13 +1,14 @@
+#include "bytecode/module.h"
 #include "compiler/tokens.hpp"
 #include "flex_bison.h"
-#include "module.h"
+#include "ir/ir.h"
 #include "parser.h"
 
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 
-std::unique_ptr<modul> current_module;
+std::unique_ptr<ast::modul> current_module;
 
 int main(const int arg_count, const char * const * const args) {
 
@@ -48,7 +49,18 @@ int main(const int arg_count, const char * const * const args) {
         exit(0);
     }
 
-    current_module->build();
+    ir::modul ir_modul{current_module->filename()};
+    current_module->build(ir_modul);
 
-    current_module->write();
+    std::cout << ir_modul << std::endl;
+
+    bytecode::modul byte_modul{std::move(ir_modul)};
+
+    auto output_filename = current_module->filename();
+
+    // Replace everything after the first dot with .bin
+    output_filename.erase(output_filename.rfind('.'));
+    output_filename += ".bin";
+
+    byte_modul.write(output_filename);
 }

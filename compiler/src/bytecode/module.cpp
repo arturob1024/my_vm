@@ -1,114 +1,151 @@
 #include "module.h"
 
 #include "ast/nodes.h"
+#include "ir/ir.h"
+#include "ir/type.h"
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <numeric>
 
-module_and_file modul::open_module(const char * path) {
-    return {std::make_unique<modul>(modul{path}), fopen(path, "r")};
-}
+namespace bytecode {
 
-module_and_file modul::open_stdin() { return {std::make_unique<modul>(modul{"stdin"}), stdin}; }
-
-void modul::add_top_level_item(ast::top_level * top_lvl) { top_lvl_items.emplace_back(top_lvl); }
-
-void modul::register_global(std::string id, const std::optional<std::string> &, ast::expression &,
-                            bool constant) {
-    std::cout << "Registered a " << (constant ? "constant" : "mutable") << " global named " << id
-              << std::endl;
-}
-
-void modul::register_function(std::string id, const std::vector<ast::typed_id> & params,
-                              const std::optional<std::string> & ret_type, ast::statement & body) {
-    std::cout << "Registered a function named " << id << std::endl;
-
-    std::vector<id_and_type> typed_ids;
-    for (auto & typed_id : params) typed_ids.push_back(typed_id.id_and_type());
-
-    functions.emplace(id, function_details{std::move(typed_ids), ret_type, func_num++});
-    current_function = std::move(id);
-    body.build(*this);
-    current_function.clear();
-    used_registers.clear();
-}
-
-void modul::call_function(std::string id, std::vector<compiled_expr> args) {
-    std::cout << "Calling function " << id << std::endl;
-    if (args.size() > 5) {
-        std::cout << "Function " << id
-                  << " called with >5 arguments. This is currently unsupported." << std::endl;
-        exit(2);
-    }
-
-    {
-        static constexpr std::array arg_regs{a0, a1, a2, a3, a4, a5};
-        auto i = 0u;
-        for (auto & arg : args) {
-            add_instruction(opcode::ori, i_type{arg_regs[i], arg.reg_num, 0});
-            assert(i < arg_regs.size());
-        }
-    }
-
-    add_instruction(opcode::jal,
-                    j_type{lr, [this, &id]() -> uint32_t {
-                               if (auto iter = functions.find(id); iter != functions.end()) {
-                                   return iter->second.number;
-                               } else {
-                                   std::cout << "Function " << id
-                                             << " needs to be defined before it is called."
-                                             << std::endl;
-                                   exit(3);
-                               }
-                           }()});
-}
-
-compiled_expr modul::compile_literal(const std::string & value, ast::type typ) {
-    switch (typ) {
-    case ast::type::floating:
-        std::cout << "Cannot handle floating point at the moment." << std::endl;
-        exit(3);
-    case ast::type::string: {
-        // save to data segment
-        auto str_loc = vm_data_start + data_segment.size();
-        assert(str_loc < UINT32_MAX);
-        for (auto c : value) data_segment.push_back(c);
-        data_segment.push_back(0);
-        auto result = alloc_reg();
-        if (str_loc <= 0xFFFF) {
-            add_instruction(opcode::ori, i_type{result, zero, static_cast<uint16_t>(str_loc)});
-        } else {
-            add_instruction(opcode::ori,
-                            i_type{result, zero, static_cast<uint16_t>(str_loc & 0xFFFF)});
-            add_instruction(opcode::lui,
-                            i_type{result, result, static_cast<uint16_t>(str_loc >> 16)});
-        }
-        return {result, "string"};
-    }
-    default:
-        std::cout << "Tried to load " << value << ", which is not currently supported at this time."
-                  << std::endl;
-        exit(4);
-    }
-}
-
-compiled_expr modul::compile_binary_op(ast::binary_operation, compiled_expr, compiled_expr) {
-    return {};
-}
-
-void modul::register_struct(std::string id, const std::vector<ast::typed_id> &) {
-    std::cout << "Registered a struct named " << id << std::endl;
-}
+modul::modul(ir::modul && mod)
+    : ir_modul{std::make_unique<ir::modul>(std::move(mod))} {}
 
 void modul::build() {
+    for (auto & iter : ir_modul->compiled_functions()) {
+        std::cout << "Building " << iter.first << '\n';
+        auto [func_iter, inserted] = [this, &iter] {
+            std::map<ir::operand, reg> param_regs;
+            uint8_t param_reg = reg::a0;
+            for (auto & param : iter.second.parameters) {
+                param_regs.emplace(param, static_cast<reg>(param_reg++));
+                assert(param_reg <= reg::a5);
+            }
+            return functions.emplace(
+                iter.first, function_details{{}, std::move(param_regs), iter.second.number});
+        }();
+        assert(inserted);
+        current_function = iter.first;
+        for (auto & instruction : iter.second.instructions) compile_to_ir(instruction);
+        current_function.clear();
+    }
+}
 
-    for (auto & top_lvl : top_lvl_items) {
-        assert(top_lvl != nullptr);
-        top_lvl->build(*this);
+// TODO: Allow inserting directly into a predefined register
+modul::reg modul::register_for(const ir::operand & operand) {
+
+    if (auto iter = cur_func().allocated_registers.find(operand);
+        iter != cur_func().allocated_registers.end()) {
+        return iter->second;
+    }
+
+    if (operand.typ == ir::string_type::instance) {
+        // TODO: This only works for raw strings
+        auto addr = add_string_to_data(operand.name);
+        assert(addr <= UINT16_MAX);
+        add_instruction(opcode::ori, i_type{reg::temp, reg::zero, static_cast<uint16_t>(addr)});
+        return reg::temp;
+    }
+
+    if (operand.typ == ir::integer_type::instance) {
+        assert(isdigit(operand.name.front()));
+        auto value = std::stoi(operand.name);
+        if (value == 0) return reg::zero;
+        assert(value < UINT16_MAX);
+        add_instruction(opcode::ori, i_type{reg::temp, reg::zero, static_cast<uint16_t>(value)});
+        return reg::temp;
+    }
+
+    std::cout << "Could not make bytecode for type " << *operand.typ << std::endl;
+    exit(5);
+}
+
+uint32_t modul::value_for(const ir::operand & operand) {
+
+    if (operand.typ == ir::string_type::instance) {
+        // TODO: This only works for raw strings
+        auto addr = add_string_to_data(operand.name);
+        assert(addr <= UINT16_MAX);
+        return addr;
+    }
+
+    if (operand.typ == ir::integer_type::instance) {
+        assert(isdigit(operand.name.front()));
+        auto value = std::stoi(operand.name);
+        assert(value < UINT16_MAX);
+        return value;
+    }
+
+    std::cout << "Could not make value for type " << *operand.typ << std::endl;
+    exit(5);
+}
+
+uint32_t modul::add_string_to_data(const std::string & text) {
+    auto addr = vm_data_start + data_segment.size();
+    for (char c : text) data_segment.push_back(c);
+    data_segment.push_back(0);
+    assert(addr <= UINT32_MAX);
+    return static_cast<uint32_t>(addr);
+}
+
+void modul::compile_to_ir(const ir::instruction & inst) {
+    switch (inst.op) {
+    case ir::operation::call: {
+        auto used_regs = used_registers();
+        // Push regs onto stack
+        uint16_t stack_used = 0;
+        // TODO: S registers are caller saved.
+        // This will involve creating a predule and conclusion.
+        for (auto & reg : used_regs) {
+            add_instruction(opcode::sw, i_type{reg, sp, stack_used});
+            stack_used += 4;
+        }
+        // Copy args to arg regs
+        assert(inst.args.size() >= 1);
+        for (auto i = 1u; i < inst.args.size(); ++i) {
+            auto arg_reg = static_cast<reg>(reg::a0 + i - 1);
+            assert(arg_reg <= reg::a5);
+            auto src_reg = register_for(inst.args[i]);
+            add_instruction(opcode::ori, i_type{arg_reg, src_reg, 0});
+        }
+        // jal to do the call
+        auto iter = ir_modul->compiled_functions().find(inst.args.front().name);
+        assert(iter != ir_modul->compiled_functions().end());
+        add_instruction(opcode::jal, j_type{reg::lr, iter->second.number});
+        // TODO: save the result from V registers
+
+        // Pop stack
+        for (auto & reg : used_regs) {
+            stack_used -= 4;
+            add_instruction(opcode::lw, i_type{reg, sp, stack_used});
+        }
+        assert(stack_used == 0);
+    } break;
+    case ir::operation::syscall: {
+        assert(inst.args.size() == 5);
+        auto func = value_for(inst.args[4]);
+        assert(func < (1u << 7));
+        add_instruction(opcode::syscall, s_type{
+                                             .rd = register_for(inst.args[0]),
+                                             .rs1 = register_for(inst.args[1]),
+                                             .rs2 = register_for(inst.args[2]),
+                                             .rs3 = register_for(inst.args[3]),
+                                             .func = static_cast<uint8_t>(func),
+                                         });
+    } break;
+    case ir::operation::ret: {
+        assert(inst.args.empty());
+        add_instruction(opcode::jr, j_type{reg::lr, 0});
+    } break;
+    default:
+        std::cout << "Cannot compile ir op #" << (unsigned)inst.op << " to bytecode." << std::endl;
+        exit(5);
     }
 }
 
@@ -122,23 +159,15 @@ void modul::add_instruction(opcode op, std::variant<r_type, i_type, j_type, s_ty
 
 modul::reg modul::alloc_reg() {
     auto candidate = static_cast<reg>(s0 + random() % (s19 - s0 + 1));
-    while (used_registers.count(candidate) != 0)
+    auto used_regs = used_registers();
+    while (used_regs.count(candidate) != 0)
         candidate = static_cast<reg>(s0 + random() % (s19 - s0 + 1));
-    used_registers.insert(candidate);
     return candidate;
 }
 
-modul::function_details::function_details(const std::vector<id_and_type> & params,
-                                          const std::optional<std::string> & ret_type,
-                                          uint32_t number)
-    : parameters{params}
-    , return_type{ret_type.value_or("")}
-    , number{number} {}
+void modul::write(const std::string & output_name) {
+    if (functions.empty()) build();
 
-void modul::write() {
-    auto output_name = filename;
-    output_name.erase(output_name.rfind('.') + 1);
-    output_name += "bin";
     auto * output = fopen(output_name.c_str(), "w");
 
     static constexpr uint8_t magic_bytes[]{0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A,
@@ -278,6 +307,22 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
     return {segment_table, segment_data, func_addrs.find(main_num)->second};
 }
 
+const modul::function_details & modul::cur_func() const {
+    assert(not current_function.empty());
+    auto iter = functions.find(current_function);
+    assert(iter != functions.end());
+    return iter->second;
+}
+
+std::set<modul::reg> modul::used_registers() const {
+    std::set<reg> used;
+    for (auto & iter : cur_func().allocated_registers) {
+        // TODO: Use lifetime analysis
+        used.insert(iter.second);
+    }
+    return used;
+}
+
 [[nodiscard]] modul::instruction::operator uint32_t() const {
     // TODO: Name magic numbers
     uint32_t result = (uint32_t)op << 26;
@@ -287,16 +332,21 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
         result |= (data.rd << 21) | (data.rs1 << 16) | (data.rs2 << 11) | (data.shamt << 6)
                 | (uint8_t)data.func;
     } break;
+        // I-type
     case opcode::lui:
-    case opcode::ori: {
+    case opcode::ori:
+    case opcode::lw:
+    case opcode::sw: {
         auto data = std::get<i_type>(this->data);
         result |= (data.rd << 21) | (data.rs << 16) | data.imm;
     } break;
+        // J-type
     case opcode::jal:
     case opcode::jr: {
         auto data = std::get<j_type>(this->data);
         result |= (data.rd << 21) | ((data.imm >> 2) & 0x1F'FFFF);
     } break;
+        // S-type
     case opcode::syscall: {
         auto data = std::get<s_type>(this->data);
         result
@@ -305,3 +355,4 @@ modul::program_data modul::layout_segments(uint32_t start_segment_table) {
     }
     return result;
 }
+} // namespace bytecode

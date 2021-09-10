@@ -1,7 +1,9 @@
 #ifndef NODES_FORWARD_H
 #define NODES_FORWARD_H
 
+#include <cstdio>
 #include <memory>
+
 namespace ast {
 
 enum class node_type {};
@@ -17,6 +19,7 @@ using expression_ptr = std::unique_ptr<expression>;
 
 class typed_id;
 class field_assignment;
+class modul;
 class const_decl;
 class function_decl;
 class struct_decl;
@@ -78,4 +81,6 @@ enum class assignment_operation {
 
 enum class type { string, integer, floating, character, boolean };
 } // namespace ast
+
+using module_and_file = std::pair<std::unique_ptr<ast::modul>, FILE *>;
 #endif

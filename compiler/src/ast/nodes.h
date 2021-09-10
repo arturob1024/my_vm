@@ -1,7 +1,7 @@
 #ifndef NODES_H
 #define NODES_H
 
-#include "module.h"
+#include "ir/ir_forward.h"
 #include "nodes_forward.h"
 
 #include <memory>
@@ -27,17 +27,17 @@ class node {
 // Intermediate nodes
 class top_level : public virtual node {
   public:
-    virtual void build(modul &) const = 0;
+    virtual void build(ir::modul &) const = 0;
 };
 
 class statement : public virtual node {
   public:
-    virtual void build(modul &) const = 0;
+    virtual void build(ir::modul &) const = 0;
 };
 
 class expression : public virtual node {
   public:
-    virtual compiled_expr compile(modul &) const = 0;
+    virtual ir::operand compile(ir::modul &) const = 0;
 };
 
 // The following two types are helper types.
@@ -83,6 +83,26 @@ class field_assignment final {
 };
 
 // declarations
+class modul final : public top_level {
+  public:
+    static module_and_file open_module(const char * path);
+    static module_and_file open_stdin();
+
+    void build(ir::modul &) const final;
+
+    void add_top_level_item(top_level *);
+    [[nodiscard]] size_t top_level_item_count() const noexcept { return items.size(); }
+
+    std::string filename() const { return file_name; }
+
+  private:
+    explicit modul(std::string filename)
+        : file_name{std::move(filename)} {}
+
+    std::vector<top_level_ptr> items;
+    std::string file_name;
+};
+
 class const_decl final : public top_level, public statement {
   public:
     const_decl(std::string * id, std::string * opt_type, expression * expr)
@@ -93,7 +113,7 @@ class const_decl final : public top_level, public statement {
         delete opt_type;
     }
 
-    void build(modul & mod) const final { mod.register_global(id, opt_type, *expr, true); }
+    void build(ir::modul & mod) const final;
 
   private:
     std::string id;
@@ -112,7 +132,7 @@ class function_decl final : public top_level {
         delete opt_ret_type;
     }
 
-    void build(modul & mod) const final { mod.register_function(id, params, opt_ret_type, *body); }
+    void build(ir::modul & mod) const final;
 
   private:
     std::string id;
@@ -128,7 +148,7 @@ class struct_decl final : public top_level {
         delete id;
     }
 
-    void build(modul & mod) const final { mod.register_struct(id, fields); }
+    void build(ir::modul & mod) const final;
 
   private:
     std::string id;
@@ -143,7 +163,7 @@ class binary_expr final : public expression {
         , rhs{rhs}
         , op{op} {}
 
-    compiled_expr compile(modul &) const final { return {}; }
+    ir::operand compile(ir::modul &) const final;
 
   private:
     expression_ptr lhs, rhs;
@@ -156,7 +176,7 @@ class if_expr final : public expression {
         , true_case{true_case}
         , false_case{false_case} {}
 
-    compiled_expr compile(modul &) const final { return {}; }
+    ir::operand compile(ir::modul &) const final;
 
   private:
     expression_ptr cond, true_case, false_case;
@@ -169,7 +189,7 @@ class literal final : public expression {
         delete value;
     }
 
-    compiled_expr compile(modul & mod) const final { return mod.compile_literal(value, typ); }
+    ir::operand compile(ir::modul & mod) const final;
 
   private:
     std::string value;
@@ -183,7 +203,7 @@ class lvalue final : public expression {
         delete id;
     }
 
-    compiled_expr compile(modul &) const final { return {}; }
+    ir::operand compile(ir::modul &) const final;
 
   private:
     std::string id;
@@ -195,7 +215,7 @@ class struct_init final : public expression {
         : type{std::move(*type)}
         , fields{std::move(fields)} {}
 
-    compiled_expr compile(modul &) const final { return {}; }
+    ir::operand compile(ir::modul &) const final;
 
   private:
     std::string type;
@@ -207,7 +227,7 @@ class unary_expr final : public expression {
         : op{op}
         , expr{expr} {}
 
-    compiled_expr compile(modul &) const final { return {}; }
+    ir::operand compile(ir::modul &) const final;
 
   private:
     unary_operation op;
@@ -222,7 +242,7 @@ class assignment final : public statement {
         , op{op}
         , expr{expr} {}
 
-    void build(modul &) const final {}
+    void build(ir::modul &) const final;
 
   private:
     std::unique_ptr<lvalue> dest;
@@ -236,9 +256,7 @@ class block_stmt final : public statement {
         for (auto * stmt : stmts) this->stmts.emplace_back(stmt);
     }
 
-    void build(modul & mod) const final {
-        for (auto & stmt : stmts) stmt->build(mod);
-    }
+    void build(ir::modul & mod) const final;
 
   private:
     std::vector<statement_ptr> stmts;
@@ -251,7 +269,7 @@ class for_stmt final : public statement {
         , body{body}
         , condition{condition} {}
 
-    void build(modul &) const final {}
+    void build(ir::modul &) const final;
 
   private:
     statement_ptr initial, increment, body;
@@ -265,17 +283,12 @@ class function_call final : public statement, public expression {
         delete id;
     }
 
-    void build(modul & mod) const final { mod.call_function(id, compile_args(mod)); }
+    void build(ir::modul & mod) const final;
 
-    compiled_expr compile(modul &) const final { return {}; }
+    ir::operand compile(ir::modul &) const final;
 
   private:
-    std::vector<compiled_expr> compile_args(modul & mod) const {
-        std::vector<compiled_expr> compiled_args;
-        compiled_args.reserve(args.size());
-        for (auto & arg : args) compiled_args.push_back(arg->compile(mod));
-        return compiled_args;
-    }
+    std::vector<ir::operand> compile_args(ir::modul & mod) const;
 
     std::string id;
     std::vector<expression_ptr> args;
@@ -287,7 +300,7 @@ class if_stmt final : public statement {
         , then_block{then_block}
         , else_block{else_block} {}
 
-    void build(modul &) const final {}
+    void build(ir::modul &) const final;
 
   private:
     expression_ptr cond;
@@ -303,7 +316,7 @@ class let_stmt final : public statement {
         delete opt_type;
     }
 
-    void build(modul &) const final {}
+    void build(ir::modul &) const final;
 
   private:
     std::string id;
@@ -315,7 +328,7 @@ class return_stmt final : public statement {
     explicit return_stmt(expression * expr = nullptr)
         : expr{expr} {}
 
-    void build(modul &) const final {}
+    void build(ir::modul &) const final;
 
   private:
     expression_ptr expr;
@@ -326,7 +339,7 @@ class while_stmt final : public statement {
         : cond{cond}
         , body{body} {}
 
-    void build(modul &) const final {}
+    void build(ir::modul &) const final;
 
   private:
     expression_ptr cond;
