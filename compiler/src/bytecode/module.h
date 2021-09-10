@@ -77,6 +77,8 @@ class modul final {
         r_type = 0,
         lui = 1,
         ori = 5,
+        lw = 12,
+        sw = 13,
         jal = 20,
         jr = 21,
         syscall = 63,
@@ -138,8 +140,10 @@ class modul final {
     std::string current_function;
 
     [[nodiscard]] const function_details & cur_func() const;
-
     [[nodiscard]] std::set<reg> used_registers() const;
+
+    [[nodiscard]] reg register_for(const ir::operand &);
+    [[nodiscard]] uint32_t add_string_to_data(const std::string &);
 
     static constexpr uint32_t vm_text_start = 0x5000;
     static constexpr uint32_t vm_data_start = 0x4000;

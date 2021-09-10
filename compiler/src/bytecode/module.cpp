@@ -2,6 +2,7 @@
 
 #include "ast/nodes.h"
 #include "ir/ir.h"
+#include "ir/type.h"
 
 #include <algorithm>
 #include <cassert>
@@ -35,7 +36,68 @@ void modul::build() {
     }
 }
 
-void modul::compile_to_ir(const ir::instruction &) {}
+modul::reg modul::register_for(const ir::operand & operand) {
+
+    if (auto iter = cur_func().allocated_registers.find(operand);
+        iter != cur_func().allocated_registers.end()) {
+        return iter->second;
+    }
+
+    if (operand.typ == ir::string_type::instance) {
+        // TODO: This only works for raw strings
+        auto addr = add_string_to_data(operand.name);
+        assert(addr <= UINT16_MAX);
+        add_instruction(opcode::ori, i_type{reg::temp, reg::zero, static_cast<uint16_t>(addr)});
+        return reg::temp;
+    }
+
+    std::cout << "Could not make bytecode for type " << operand.typ << std::endl;
+    exit(5);
+}
+
+uint32_t modul::add_string_to_data(const std::string & text) {
+    auto addr = vm_data_start + data_segment.size();
+    for (char c : text) data_segment.push_back(c);
+    data_segment.push_back(0);
+    assert(addr <= UINT32_MAX);
+    return static_cast<uint32_t>(addr);
+}
+
+void modul::compile_to_ir(const ir::instruction & inst) {
+    switch (inst.op) {
+    case ir::operation::call: {
+        auto used_regs = used_registers();
+        // Push regs onto stack
+        uint16_t stack_used = 0;
+        // TODO: S registers are caller saved.
+        // This will involve creating a predule and conclusion.
+        for (auto & reg : used_regs) {
+            add_instruction(opcode::sw, i_type{reg, sp, stack_used});
+            stack_used += 4;
+        }
+        // Copy args to arg regs
+        for (auto i = 1u; i < inst.args.size(); ++i) {
+            auto arg_reg = static_cast<reg>(reg::a0 + i - 1);
+            assert(arg_reg <= reg::a5);
+            auto src_reg = register_for(inst.args[i]);
+            add_instruction(opcode::ori, i_type{arg_reg, src_reg, 0});
+        }
+        // jal to do the call
+        add_instruction(opcode::jal, j_type{reg::lr, cur_func().number});
+        // TODO: save the result from V registers
+
+        // Pop stack
+        for (auto & reg : used_regs) {
+            stack_used -= 4;
+            add_instruction(opcode::lw, i_type{reg, sp, stack_used});
+        }
+        assert(stack_used == 0);
+    } break;
+    default:
+        std::cout << "Cannot compile ir op #" << (unsigned)inst.op << " to bytecode." << std::endl;
+        exit(5);
+    }
+}
 
 void modul::add_instruction(opcode op, std::variant<r_type, i_type, j_type, s_type> && data) {
 
@@ -220,16 +282,21 @@ std::set<modul::reg> modul::used_registers() const {
         result |= (data.rd << 21) | (data.rs1 << 16) | (data.rs2 << 11) | (data.shamt << 6)
                 | (uint8_t)data.func;
     } break;
+        // I-type
     case opcode::lui:
-    case opcode::ori: {
+    case opcode::ori:
+    case opcode::lw:
+    case opcode::sw: {
         auto data = std::get<i_type>(this->data);
         result |= (data.rd << 21) | (data.rs << 16) | data.imm;
     } break;
+        // J-type
     case opcode::jal:
     case opcode::jr: {
         auto data = std::get<j_type>(this->data);
         result |= (data.rd << 21) | ((data.imm >> 2) & 0x1F'FFFF);
     } break;
+        // S-type
     case opcode::syscall: {
         auto data = std::get<s_type>(this->data);
         result
