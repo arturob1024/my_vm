@@ -107,6 +107,7 @@ void modul::compile_to_ir(const ir::instruction & inst) {
             stack_used += 4;
         }
         // Copy args to arg regs
+        assert(inst.args.size() >= 1);
         for (auto i = 1u; i < inst.args.size(); ++i) {
             auto arg_reg = static_cast<reg>(reg::a0 + i - 1);
             assert(arg_reg <= reg::a5);
@@ -114,7 +115,9 @@ void modul::compile_to_ir(const ir::instruction & inst) {
             add_instruction(opcode::ori, i_type{arg_reg, src_reg, 0});
         }
         // jal to do the call
-        add_instruction(opcode::jal, j_type{reg::lr, cur_func().number});
+        auto iter = ir_modul->compiled_functions().find(inst.args.front().name);
+        assert(iter != ir_modul->compiled_functions().end());
+        add_instruction(opcode::jal, j_type{reg::lr, iter->second.number});
         // TODO: save the result from V registers
 
         // Pop stack
