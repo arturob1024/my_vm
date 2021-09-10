@@ -18,9 +18,24 @@ modul::modul(ir::modul && mod)
 void modul::build() {
     for (auto & iter : ir_modul->compiled_functions()) {
         std::cout << "Building " << iter.first << '\n';
-        functions.emplace(iter.first, function_details{{}, {}, iter.second.number});
+        auto [func_iter, inserted] = [this, &iter] {
+            std::map<ir::operand, reg> param_regs;
+            uint8_t param_reg = reg::a0;
+            for (auto & param : iter.second.parameters) {
+                param_regs.emplace(param, static_cast<reg>(param_reg++));
+                assert(param_reg <= reg::a5);
+            }
+            return functions.emplace(
+                iter.first, function_details{{}, std::move(param_regs), iter.second.number});
+        }();
+        assert(inserted);
+        current_function = iter.first;
+        for (auto & instruction : iter.second.instructions) compile_to_ir(instruction);
+        current_function.clear();
     }
 }
+
+void modul::compile_to_ir(const ir::instruction &) {}
 
 void modul::add_instruction(opcode op, std::variant<r_type, i_type, j_type, s_type> && data) {
 

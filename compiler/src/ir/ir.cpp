@@ -46,10 +46,10 @@ void modul::register_function(std::string id, const std::vector<ast::typed_id> &
 
     assert(functions.find(id) == functions.end());
 
-    std::vector<id_and_type> parameters;
+    std::vector<operand> parameters;
     for (auto & param : params) {
         auto [id, type] = param.id_and_type();
-        parameters.push_back(std::make_pair(id, ast_to_ir_type(type)));
+        parameters.push_back({id, ast_to_ir_type(type)});
     }
     functions.insert_or_assign(
         id, function_details{{}, std::move(parameters), type.value_or(""), func_num++});
@@ -173,10 +173,10 @@ modul::modul(std::string filename)
                                                  },
                                                  {}},
                                      instruction{operation::ret, {}, {}}},
-                         std::vector{id_and_type{"input", string_type::instance}}, "", func_num++});
+                         std::vector{operand{"input", string_type::instance}}, "", func_num++});
 }
 
-modul::function_details::function_details(const std::vector<id_and_type> & parameters,
+modul::function_details::function_details(const std::vector<operand> & parameters,
                                           const std::optional<std::string> & opt_ret_type,
                                           uint32_t number)
     : parameters{parameters}
@@ -185,7 +185,7 @@ modul::function_details::function_details(const std::vector<id_and_type> & param
 
 type_ptr modul::function_details::generate_type() const {
     std::vector<type_ptr> args;
-    for (auto & param : parameters) args.push_back(param.second);
+    for (auto & param : parameters) args.push_back(param.typ);
     return std::make_shared<ir::func_type>(std::move(args), ast_to_ir_type(return_type));
 }
 
@@ -205,8 +205,7 @@ std::ostream & operator<<(std::ostream & lhs, const ir::modul & rhs) {
     for (auto & iter : rhs.functions) {
         lhs << "Function " << iter.first << '\n';
         lhs << "Parameters: (";
-        for (auto & param : iter.second.parameters)
-            lhs << *param.second << ' ' << param.first << ", ";
+        for (auto & param : iter.second.parameters) lhs << *param.typ << ' ' << param.name << ", ";
         lhs << ")\n";
         lhs << "Returns " << iter.second.return_type << '\n';
         for (auto & inst : iter.second.instructions) lhs << inst << '\n';

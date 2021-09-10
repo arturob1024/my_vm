@@ -132,6 +132,8 @@ class modul final {
         uint32_t number;
     };
 
+    void compile_to_ir(const ir::instruction &);
+
     std::map<std::string, function_details> functions;
     std::string current_function;
 

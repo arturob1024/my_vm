@@ -14,11 +14,14 @@
 
 namespace ir {
 
-using id_and_type = std::pair<std::string, type_ptr>;
-
 struct operand {
     std::string name;
     type_ptr typ;
+
+  private:
+    [[nodiscard]] friend bool operator<(const operand & lhs, const operand & rhs) {
+        return lhs.name < rhs.name;
+    }
 };
 
 struct instruction {
@@ -67,16 +70,15 @@ struct modul {
 
     struct function_details {
         std::vector<instruction> instructions;
-        std::vector<id_and_type> parameters;
+        std::vector<operand> parameters;
         std::string return_type;
         uint32_t number;
 
-        function_details(const std::vector<id_and_type> &, const std::optional<std::string> &,
+        function_details(const std::vector<operand> &, const std::optional<std::string> &,
                          uint32_t);
 
-        function_details(std::vector<instruction> && instructions,
-                         std::vector<id_and_type> && params, std::string && ret_type,
-                         uint32_t number)
+        function_details(std::vector<instruction> && instructions, std::vector<operand> && params,
+                         std::string && ret_type, uint32_t number)
             : instructions{std::move(instructions)}
             , parameters{std::move(params)}
             , return_type{std::move(ret_type)}
