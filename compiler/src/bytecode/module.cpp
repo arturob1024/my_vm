@@ -113,6 +113,10 @@ void modul::compile_to_ir(const ir::instruction & inst) {
                                              .func = register_for(inst.args[0]),
                                          });
     } break;
+    case ir::operation::ret: {
+        assert(inst.args.empty());
+        add_instruction(opcode::jr, j_type{reg::lr, 0});
+    } break;
     default:
         std::cout << "Cannot compile ir op #" << (unsigned)inst.op << " to bytecode." << std::endl;
         exit(5);
