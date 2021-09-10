@@ -20,9 +20,9 @@ class modul final {
 
   public:
     void build();
-    void write();
+    void write(const std::string &);
 
-    explicit modul(std::string filename);
+    explicit modul(ir::modul &&);
     modul(const modul &) = delete;
     modul & operator=(const modul &) = delete;
 
@@ -69,9 +69,9 @@ class modul final {
     static_assert(reg::lr == 31);
 
   private:
-    std::string filename;
+    std::unique_ptr<ir::modul> ir_modul;
 
-    enum class func_num : uint8_t {};
+    enum class r_type_func_num : uint8_t {};
 
     enum class opcode : uint8_t {
         r_type = 0,
@@ -85,7 +85,7 @@ class modul final {
     struct r_type {
         reg rd, rs1, rs2;
         uint8_t shamt;
-        func_num func;
+        r_type_func_num func;
     };
     struct i_type {
         reg rd;

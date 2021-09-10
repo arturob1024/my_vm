@@ -12,8 +12,8 @@
 
 namespace bytecode {
 
-modul::modul(std::string filename)
-    : filename{std::move(filename)} {}
+modul::modul(ir::modul && mod)
+    : ir_modul{std::make_unique<ir::modul>(std::move(mod))} {}
 
 void modul::build() {}
 
@@ -33,10 +33,7 @@ modul::reg modul::alloc_reg() {
     return candidate;
 }
 
-void modul::write() {
-    auto output_name = filename;
-    output_name.erase(output_name.rfind('.') + 1);
-    output_name += "bin";
+void modul::write(const std::string & output_name) {
     auto * output = fopen(output_name.c_str(), "w");
 
     static constexpr uint8_t magic_bytes[]{0xEF, 0x12, 0x34, 0x56, 0x78, 0x9A,

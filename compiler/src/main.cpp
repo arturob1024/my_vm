@@ -54,5 +54,15 @@ int main(const int arg_count, const char * const * const args) {
 
     std::cout << ir_modul << std::endl;
 
+    bytecode::modul byte_modul{std::move(ir_modul)};
 
+    auto output_filename = current_module->filename();
+
+    {
+        // replace everything after the first dot with .bin
+        output_filename.erase(output_filename.rfind('.'));
+        output_filename += ".bin";
+    }
+
+    byte_modul.write(output_filename);
 }
