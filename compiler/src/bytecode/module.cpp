@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -36,6 +37,7 @@ void modul::build() {
     }
 }
 
+// TODO: Allow inserting directly into a predefined register
 modul::reg modul::register_for(const ir::operand & operand) {
 
     if (auto iter = cur_func().allocated_registers.find(operand);
@@ -51,7 +53,15 @@ modul::reg modul::register_for(const ir::operand & operand) {
         return reg::temp;
     }
 
-    std::cout << "Could not make bytecode for type " << operand.typ << std::endl;
+    if (operand.typ == ir::integer_type::instance) {
+        assert(isdigit(operand.name.front()));
+        auto value = std::stoi(operand.name);
+        assert(value < UINT16_MAX);
+        add_instruction(opcode::ori, i_type{reg::temp, reg::zero, static_cast<uint16_t>(value)});
+        return reg::temp;
+    }
+
+    std::cout << "Could not make bytecode for type " << *operand.typ << std::endl;
     exit(5);
 }
 
@@ -92,6 +102,16 @@ void modul::compile_to_ir(const ir::instruction & inst) {
             add_instruction(opcode::lw, i_type{reg, sp, stack_used});
         }
         assert(stack_used == 0);
+    } break;
+    case ir::operation::syscall: {
+        assert(inst.args.size() == 5);
+        add_instruction(opcode::syscall, s_type{
+                                             .rd = register_for(inst.args[1]),
+                                             .rs1 = register_for(inst.args[2]),
+                                             .rs2 = register_for(inst.args[3]),
+                                             .rs3 = register_for(inst.args[4]),
+                                             .func = register_for(inst.args[0]),
+                                         });
     } break;
     default:
         std::cout << "Cannot compile ir op #" << (unsigned)inst.op << " to bytecode." << std::endl;
